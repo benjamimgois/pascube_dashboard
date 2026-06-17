@@ -742,6 +742,201 @@ function getDriverDistribution(data) {
     return drivers;
 }
 
+// Helper to calculate average scores by CPU, GPU or OS
+function getAverageScores(data, type) {
+    const totals = {};
+    const counts = {};
+    
+    data.forEach(r => {
+        let key, val;
+        if (type === 'cpu') {
+            key = normalizeCPU(r.cpu);
+            val = r.cpuMulti;
+        } else if (type === 'gpu') {
+            key = normalizeGPU(r.gpu);
+            val = r.gpuScore;
+        } else if (type === 'os') {
+            key = r.os;
+            if (key) {
+                if (key.toLowerCase().includes('arch')) key = 'Arch Linux';
+                else if (key.toLowerCase().includes('fedora')) key = 'Fedora';
+                else if (key.toLowerCase().includes('ubuntu')) key = 'Ubuntu';
+                else if (key.toLowerCase().includes('cachyos') || key.toLowerCase().includes('cachy os')) key = 'CachyOS';
+                else if (key.toLowerCase().includes('bazzite')) key = 'Bazzite';
+                else if (key.toLowerCase().includes('mint')) key = 'Linux Mint';
+                else if (key.toLowerCase().includes('nobara')) key = 'Nobara';
+                else if (key.toLowerCase().includes('pop!_os') || key.toLowerCase().includes('pop_os')) key = 'Pop!_OS';
+                else if (key.toLowerCase().includes('zorin')) key = 'Zorin OS';
+                else if (key.toLowerCase().includes('steamos')) key = 'SteamOS';
+                else if (key.toLowerCase().includes('garuda')) key = 'Garuda';
+            }
+            val = r.mainScore;
+        }
+        
+        if (key && key !== 'Unknown CPU' && key !== 'Unknown GPU' && key !== 'N/D' && val !== null && val !== undefined) {
+            totals[key] = (totals[key] || 0) + val;
+            counts[key] = (counts[key] || 0) + 1;
+        }
+    });
+    
+    return Object.entries(totals)
+        .map(([name, total]) => ({
+            name,
+            average: Math.round(total / counts[name])
+        }))
+        .sort((a, b) => b.average - a.average)
+        .slice(0, 8);
+}
+
+// Helper to get Mesa or Kernel major.minor version distributions
+function getVersionDistribution(data, type) {
+    const counts = {};
+    data.forEach(r => {
+        let version = null;
+        if (type === 'mesa') {
+            const d = r.driver || '';
+            const match = d.match(/Mesa\s+(\d+\.\d+)/i);
+            if (match) {
+                version = match[1];
+            }
+        } else if (type === 'kernel') {
+            const k = r.kernel || '';
+            const match = k.match(/^(\d+\.\d+)/);
+            if (match) {
+                version = match[1];
+            }
+        }
+        
+        if (version) {
+            counts[version] = (counts[version] || 0) + 1;
+        } else {
+            const rawVal = type === 'mesa' ? r.driver : r.kernel;
+            if (rawVal && rawVal !== 'N/D' && rawVal.trim() !== '') {
+                counts['Other'] = (counts['Other'] || 0) + 1;
+            }
+        }
+    });
+    
+    return counts;
+}
+
+// Helper to calculate score histogram bins
+function getScoreHistogramData(data) {
+    const bins = {
+        '0-499': 0,
+        '500-999': 0,
+        '1000-1499': 0,
+        '1500-1999': 0,
+        '2000-2499': 0,
+        '2500-2999': 0,
+        '3000-3499': 0,
+        '3500-3999': 0,
+        '4000-4499': 0,
+        '4500-4999': 0,
+        '5000+': 0
+    };
+    
+    data.forEach(r => {
+        const score = r.mainScore;
+        if (score !== null && score !== undefined) {
+            if (score < 500) bins['0-499']++;
+            else if (score < 1000) bins['500-999']++;
+            else if (score < 1500) bins['1000-1499']++;
+            else if (score < 2000) bins['1500-1999']++;
+            else if (score < 2500) bins['2000-2499']++;
+            else if (score < 3000) bins['2500-2999']++;
+            else if (score < 3500) bins['3000-3499']++;
+            else if (score < 4000) bins['3500-3999']++;
+            else if (score < 4500) bins['4000-4499']++;
+            else if (score < 5000) bins['4500-4999']++;
+            else bins['5000+']++;
+        }
+    });
+    
+    return bins;
+}
+
+// Helper to render vertical bar chart for histogram
+function renderVerticalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor) {
+    if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+    }
+    
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: datasetLabel,
+                data: data,
+                backgroundColor: barColor,
+                borderColor: borderColor,
+                borderWidth: 1.5,
+                borderRadius: 6,
+                borderSkipped: false,
+                barPercentage: 0.75,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleFont: {
+                        family: "'Outfit', sans-serif",
+                        size: 13,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13
+                    },
+                    padding: 12,
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            family: "'Outfit', sans-serif",
+                            size: 11
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)',
+                        tickBorderDash: [3, 3]
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 // Doughnut Chart Renderer Helper
 function renderDoughnutChart(canvasId, labels, data, colors, borderColors) {
     if (chartInstances[canvasId]) {
@@ -960,6 +1155,94 @@ function renderCharts() {
             '#34d399',
             '#22d3ee',
             '#6b7280'
+        ]
+    );
+
+    // 10. Average CPU score by model
+    const cpuAverages = getAverageScores(benchmarkData, 'cpu');
+    renderHorizontalBarChart(
+        'cpuAverageChart',
+        cpuAverages.map(c => c.name),
+        cpuAverages.map(c => c.average),
+        'Average CPU Multi Score',
+        'rgba(99, 102, 241, 0.85)',
+        '#818cf8'
+    );
+
+    // 11. Average GPU score by model
+    const gpuAverages = getAverageScores(benchmarkData, 'gpu');
+    renderHorizontalBarChart(
+        'gpuAverageChart',
+        gpuAverages.map(g => g.name),
+        gpuAverages.map(g => g.average),
+        'Average GPU Score',
+        'rgba(14, 165, 233, 0.85)',
+        '#38bdf8'
+    );
+
+    // 12. Average Main Score by OS
+    const osAverages = getAverageScores(benchmarkData, 'os');
+    renderHorizontalBarChart(
+        'osAverageChart',
+        osAverages.map(o => o.name),
+        osAverages.map(o => o.average),
+        'Average Main Score',
+        'rgba(16, 185, 129, 0.85)',
+        '#10b981'
+    );
+
+    // 13. Score Distribution Histogram
+    const histogramData = getScoreHistogramData(benchmarkData);
+    renderVerticalBarChart(
+        'scoreHistogramChart',
+        Object.keys(histogramData),
+        Object.values(histogramData),
+        'Count',
+        'rgba(168, 85, 247, 0.85)',
+        '#c084fc'
+    );
+
+    // 14. Mesa version distribution
+    const mesaVersions = getVersionDistribution(benchmarkData, 'mesa');
+    renderDoughnutChart(
+        'mesaVersionChart',
+        Object.keys(mesaVersions),
+        Object.values(mesaVersions),
+        [
+            'rgba(99, 102, 241, 0.8)',
+            'rgba(14, 165, 233, 0.8)',
+            'rgba(168, 85, 247, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(156, 163, 175, 0.8)'
+        ],
+        [
+            '#818cf8',
+            '#38bdf8',
+            '#c084fc',
+            '#fbbf24',
+            '#9ca3af'
+        ]
+    );
+
+    // 15. Kernel version distribution
+    const kernelVersions = getVersionDistribution(benchmarkData, 'kernel');
+    renderDoughnutChart(
+        'kernelVersionChart',
+        Object.keys(kernelVersions),
+        Object.values(kernelVersions),
+        [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(14, 165, 233, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(244, 63, 94, 0.8)',
+            'rgba(156, 163, 175, 0.8)'
+        ],
+        [
+            '#34d399',
+            '#38bdf8',
+            '#fbbf24',
+            '#fb7185',
+            '#9ca3af'
         ]
     );
 }

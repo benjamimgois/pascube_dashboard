@@ -190,6 +190,78 @@
             </div>
         </section>
 
+        <!-- Advanced Metrics Section -->
+        <section class="advanced-charts-section">
+            <div class="section-header">
+                <h2>Advanced Performance & Versions</h2>
+                <p>Average performance scores, run distribution density, and system software versions</p>
+            </div>
+            
+            <div class="advanced-averages-grid">
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Average CPU Score by Model</h3>
+                        <p>Average CPU Multi score (higher is better)</p>
+                    </div>
+                    <div class="chart-canvas-area">
+                        <canvas id="cpuAverageChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Average GPU Score by Model</h3>
+                        <p>Average GPU score (higher is better)</p>
+                    </div>
+                    <div class="chart-canvas-area">
+                        <canvas id="gpuAverageChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Average Main Score by OS</h3>
+                        <p>Average benchmark score across operating systems (higher is better)</p>
+                    </div>
+                    <div class="chart-canvas-area">
+                        <canvas id="osAverageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="advanced-density-grid">
+                <div class="chart-container-wrapper histogram-chart">
+                    <div class="chart-header">
+                        <h3>Score Distribution Histogram</h3>
+                        <p>Density of runs by score ranges</p>
+                    </div>
+                    <div class="chart-canvas-area">
+                        <canvas id="scoreHistogramChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Mesa Versions</h3>
+                        <p>Open source graphics driver version distribution</p>
+                    </div>
+                    <div class="chart-canvas-area donut-chart-canvas">
+                        <canvas id="mesaVersionChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Kernel Versions</h3>
+                        <p>Linux kernel major version distribution</p>
+                    </div>
+                    <div class="chart-canvas-area donut-chart-canvas">
+                        <canvas id="kernelVersionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Leaderboard Table Section -->
         <section class="leaderboard-section">
             <div class="leaderboard-header">

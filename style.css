@@ -338,6 +338,26 @@ h1, h2, h3, h4 {
     height: 240px;
 }
 
+/* Advanced Metrics Section */
+.advanced-charts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.advanced-averages-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.advanced-density-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1.5rem;
+}
+
 /* Leaderboard Table Section */
 .leaderboard-section {
     display: flex;
@@ -592,6 +612,15 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.95rem; font-weight: 80
     .distribution-charts-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+    .advanced-averages-grid {
+        grid-template-columns: 1fr;
+    }
+    .advanced-density-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .histogram-chart {
+        grid-column: span 2;
+    }
 }
 
 @media (max-width: 768px) {
@@ -627,5 +656,14 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.95rem; font-weight: 80
     }
     .distribution-charts-grid {
         grid-template-columns: 1fr;
+    }
+    .advanced-averages-grid {
+        grid-template-columns: 1fr;
+    }
+    .advanced-density-grid {
+        grid-template-columns: 1fr;
+    }
+    .histogram-chart {
+        grid-column: span 1;
     }
 }

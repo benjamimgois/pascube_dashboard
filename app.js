@@ -687,7 +687,34 @@ function getOSDistribution(data) {
         
         osMap[osClean] = (osMap[osClean] || 0) + 1;
     });
-    return osMap;
+
+    // Sort operating systems by frequency descending
+    const sortedOS = Object.entries(osMap).sort((a, b) => b[1] - a[1]);
+
+    if (sortedOS.length <= 10) {
+        const result = {};
+        sortedOS.forEach(([key, val]) => {
+            result[key] = val;
+        });
+        return result;
+    }
+
+    // Top 10 most used
+    const top10 = sortedOS.slice(0, 10);
+    const others = sortedOS.slice(10);
+    
+    // Sum all others
+    const otherSum = others.reduce((sum, curr) => sum + curr[1], 0);
+
+    const finalMap = {};
+    top10.forEach(([key, val]) => {
+        finalMap[key] = val;
+    });
+
+    // Add/merge into 'Other'
+    finalMap['Other'] = (finalMap['Other'] || 0) + otherSum;
+
+    return finalMap;
 }
 
 // Helper to get CPU Brand distribution
@@ -724,25 +751,7 @@ function getGPUBrandDistribution(data) {
     return brands;
 }
 
-// Helper to get Video Driver distribution
-function getDriverDistribution(data) {
-    const drivers = { Mesa: 0, NVIDIA: 0, Other: 0, 'Not Reported': 0 };
-    data.forEach(r => {
-        const d = r.driver;
-        if (!d || d === 'N/D' || d.trim() === '') {
-            drivers['Not Reported']++;
-        } else if (d.toLowerCase().includes('mesa')) {
-            drivers.Mesa++;
-        } else if (d.toLowerCase().includes('nvidia') || d.toLowerCase().includes('nvrm')) {
-            drivers.NVIDIA++;
-        } else {
-            drivers.Other++;
-        }
-    });
-    return drivers;
-}
-
-// Helper to calculate average scores by CPU, GPU or OS
+// Helper to calculate average scores by CPU or GPU
 function getAverageScores(data, type) {
     const totals = {};
     const counts = {};
@@ -755,22 +764,6 @@ function getAverageScores(data, type) {
         } else if (type === 'gpu') {
             key = normalizeGPU(r.gpu);
             val = r.gpuScore;
-        } else if (type === 'os') {
-            key = r.os;
-            if (key) {
-                if (key.toLowerCase().includes('arch')) key = 'Arch Linux';
-                else if (key.toLowerCase().includes('fedora')) key = 'Fedora';
-                else if (key.toLowerCase().includes('ubuntu')) key = 'Ubuntu';
-                else if (key.toLowerCase().includes('cachyos') || key.toLowerCase().includes('cachy os')) key = 'CachyOS';
-                else if (key.toLowerCase().includes('bazzite')) key = 'Bazzite';
-                else if (key.toLowerCase().includes('mint')) key = 'Linux Mint';
-                else if (key.toLowerCase().includes('nobara')) key = 'Nobara';
-                else if (key.toLowerCase().includes('pop!_os') || key.toLowerCase().includes('pop_os')) key = 'Pop!_OS';
-                else if (key.toLowerCase().includes('zorin')) key = 'Zorin OS';
-                else if (key.toLowerCase().includes('steamos')) key = 'SteamOS';
-                else if (key.toLowerCase().includes('garuda')) key = 'Garuda';
-            }
-            val = r.mainScore;
         }
         
         if (key && key !== 'Unknown CPU' && key !== 'Unknown GPU' && key !== 'N/D' && val !== null && val !== undefined) {
@@ -1076,28 +1069,43 @@ function renderCharts() {
 
     // 6. Pie/Doughnut OS Distribution Chart
     const osDist = getOSDistribution(benchmarkData);
+    const osLabels = Object.keys(osDist);
+    
+    const osPalette = [
+        { bg: 'rgba(99, 102, 241, 0.8)', border: '#818cf8' },   // Indigo
+        { bg: 'rgba(168, 85, 247, 0.8)', border: '#c084fc' },  // Purple
+        { bg: 'rgba(14, 165, 233, 0.8)', border: '#38bdf8' },  // Sky
+        { bg: 'rgba(16, 185, 129, 0.8)', border: '#34d399' },  // Emerald
+        { bg: 'rgba(245, 158, 11, 0.8)', border: '#fbbf24' },  // Amber
+        { bg: 'rgba(244, 63, 94, 0.8)', border: '#fb7185' },   // Rose
+        { bg: 'rgba(6, 182, 212, 0.8)', border: '#22d3ee' },   // Cyan
+        { bg: 'rgba(139, 92, 246, 0.8)', border: '#a78bfa' },  // Violet
+        { bg: 'rgba(236, 72, 153, 0.8)', border: '#f472b6' },  // Pink
+        { bg: 'rgba(20, 184, 166, 0.8)', border: '#2dd4bf' }   // Teal
+    ];
+
+    const osBgColors = [];
+    const osBorderColors = [];
+    let osColorIdx = 0;
+
+    osLabels.forEach(label => {
+        if (label === 'Other') {
+            osBgColors.push('rgba(107, 114, 128, 0.8)'); // Gray
+            osBorderColors.push('#9ca3af');
+        } else {
+            const color = osPalette[osColorIdx % osPalette.length];
+            osBgColors.push(color.bg);
+            osBorderColors.push(color.border);
+            osColorIdx++;
+        }
+    });
+
     renderDoughnutChart(
         'osDistChart',
-        Object.keys(osDist),
+        osLabels,
         Object.values(osDist),
-        [
-            'rgba(99, 102, 241, 0.8)',
-            'rgba(168, 85, 247, 0.8)',
-            'rgba(14, 165, 233, 0.8)',
-            'rgba(16, 185, 129, 0.8)',
-            'rgba(245, 158, 11, 0.8)',
-            'rgba(244, 63, 94, 0.8)',
-            'rgba(6, 182, 212, 0.8)'
-        ],
-        [
-            '#818cf8',
-            '#c084fc',
-            '#38bdf8',
-            '#34d399',
-            '#fbbf24',
-            '#fb7185',
-            '#22d3ee'
-        ]
+        osBgColors,
+        osBorderColors
     );
 
     // 7. Pie/Doughnut CPU Brand Distribution Chart
@@ -1138,26 +1146,6 @@ function renderCharts() {
         ]
     );
 
-    // 9. Pie/Doughnut Driver Distribution Chart
-    const driverDist = getDriverDistribution(benchmarkData);
-    renderDoughnutChart(
-        'driverDistChart',
-        Object.keys(driverDist),
-        Object.values(driverDist),
-        [
-            'rgba(168, 85, 247, 0.8)', // Mesa
-            'rgba(16, 185, 129, 0.8)', // NVIDIA
-            'rgba(6, 182, 212, 0.8)',  // Other
-            'rgba(107, 114, 128, 0.8)'  // Not Reported
-        ],
-        [
-            '#c084fc',
-            '#34d399',
-            '#22d3ee',
-            '#6b7280'
-        ]
-    );
-
     // 10. Average CPU score by model
     const cpuAverages = getAverageScores(benchmarkData, 'cpu');
     renderHorizontalBarChart(
@@ -1178,17 +1166,6 @@ function renderCharts() {
         'Average GPU Score',
         'rgba(14, 165, 233, 0.85)',
         '#38bdf8'
-    );
-
-    // 12. Average Main Score by OS
-    const osAverages = getAverageScores(benchmarkData, 'os');
-    renderHorizontalBarChart(
-        'osAverageChart',
-        osAverages.map(o => o.name),
-        osAverages.map(o => o.average),
-        'Average Main Score',
-        'rgba(16, 185, 129, 0.85)',
-        '#10b981'
     );
 
     // 13. Score Distribution Histogram

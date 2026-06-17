@@ -118,6 +118,78 @@
             </div>
         </section>
 
+        <!-- Demographics Section -->
+        <section class="demographics-section">
+            <div class="section-header">
+                <h2>System Demographics</h2>
+                <p>Hardware popularity and distribution statistics</p>
+            </div>
+            
+            <div class="usage-charts-grid">
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Top 10 CPU - Most Used</h3>
+                        <p>Most popular CPU models in benchmarks</p>
+                    </div>
+                    <div class="chart-canvas-area">
+                        <canvas id="cpuPopularChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Top 10 GPU - Most Used</h3>
+                        <p>Most popular GPU models in benchmarks</p>
+                    </div>
+                    <div class="chart-canvas-area">
+                        <canvas id="gpuPopularChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="distribution-charts-grid">
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Operating Systems</h3>
+                        <p>OS distribution</p>
+                    </div>
+                    <div class="chart-canvas-area donut-chart-canvas">
+                        <canvas id="osDistChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>CPU Brands</h3>
+                        <p>AMD vs Intel distribution</p>
+                    </div>
+                    <div class="chart-canvas-area donut-chart-canvas">
+                        <canvas id="cpuBrandDistChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>GPU Brands</h3>
+                        <p>NVIDIA vs AMD vs Intel distribution</p>
+                    </div>
+                    <div class="chart-canvas-area donut-chart-canvas">
+                        <canvas id="gpuBrandDistChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Video Drivers</h3>
+                        <p>Driver distribution</p>
+                    </div>
+                    <div class="chart-canvas-area donut-chart-canvas">
+                        <canvas id="driverDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Leaderboard Table Section -->
         <section class="leaderboard-section">
             <div class="leaderboard-header">

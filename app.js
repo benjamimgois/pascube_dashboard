@@ -631,10 +631,188 @@ function renderTable() {
     });
 }
 
+// Helper to normalize CPU names for popularity chart
+function normalizeCPU(name) {
+    if (!name) return 'Unknown CPU';
+    let clean = name.replace(/^(AMD|Intel|Intel\(R\))\s+/i, '');
+    clean = clean.replace(/\s+\d+-Core$/i, ''); // strip " 16-Core" etc.
+    clean = clean.replace(/\s+Eight-Core$/i, ''); // strip " Eight-Core"
+    clean = clean.replace(/\s+@\s+\d+\.\d+GHz.*/i, ''); // strip "@ 4.00GHz" etc.
+    return clean.trim();
+}
+
+// Helper to normalize GPU names for popularity chart
+function normalizeGPU(name) {
+    if (!name) return 'Unknown GPU';
+    let clean = name.replace(/^(AMD|Intel|NVIDIA|Intel\(R\))\s+/i, '');
+    clean = clean.replace(/\s+Graphics.*/i, ''); // strip " Graphics"
+    clean = clean.replace(/\(tm\)/gi, '');
+    clean = clean.replace(/\(R\)/gi, '');
+    return clean.trim();
+}
+
+// Helper to get top hardware by frequency
+function getTopHardware(data, type, limit = 10) {
+    const counts = {};
+    data.forEach(r => {
+        const name = type === 'cpu' ? normalizeCPU(r.cpu) : normalizeGPU(r.gpu);
+        if (name && name !== 'Unknown CPU' && name !== 'Unknown GPU' && name !== 'N/D') {
+            counts[name] = (counts[name] || 0) + 1;
+        }
+    });
+    return Object.entries(counts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, limit);
+}
+
+// Helper to get OS distribution
+function getOSDistribution(data) {
+    const osMap = {};
+    data.forEach(r => {
+        const os = r.os || 'Unknown OS';
+        let osClean = os.split(' ')[0];
+        if (os.toLowerCase().includes('arch')) osClean = 'Arch Linux';
+        else if (os.toLowerCase().includes('fedora')) osClean = 'Fedora';
+        else if (os.toLowerCase().includes('ubuntu')) osClean = 'Ubuntu';
+        else if (os.toLowerCase().includes('cachyos') || os.toLowerCase().includes('cachy os')) osClean = 'CachyOS';
+        else if (os.toLowerCase().includes('bazzite')) osClean = 'Bazzite';
+        else if (os.toLowerCase().includes('mint')) osClean = 'Linux Mint';
+        else if (os.toLowerCase().includes('nobara')) osClean = 'Nobara';
+        else if (os.toLowerCase().includes('pop!_os') || os.toLowerCase().includes('pop_os')) osClean = 'Pop!_OS';
+        else if (os.toLowerCase().includes('zorin')) osClean = 'Zorin OS';
+        else if (os.toLowerCase().includes('steamos')) osClean = 'SteamOS';
+        else if (os.toLowerCase().includes('garuda')) osClean = 'Garuda';
+        else if (osClean === 'N/D' || osClean.trim() === '') osClean = 'Other';
+        
+        osMap[osClean] = (osMap[osClean] || 0) + 1;
+    });
+    return osMap;
+}
+
+// Helper to get CPU Brand distribution
+function getCPUBrandDistribution(data) {
+    const brands = { AMD: 0, Intel: 0, Other: 0 };
+    data.forEach(r => {
+        const cpu = (r.cpu || '').toLowerCase();
+        if (cpu.includes('amd') || cpu.includes('ryzen') || cpu.includes('epyc')) {
+            brands.AMD++;
+        } else if (cpu.includes('intel') || cpu.includes('xeon') || cpu.includes('i3') || cpu.includes('i5') || cpu.includes('i7') || cpu.includes('i9')) {
+            brands.Intel++;
+        } else {
+            brands.Other++;
+        }
+    });
+    return brands;
+}
+
+// Helper to get GPU Brand distribution
+function getGPUBrandDistribution(data) {
+    const brands = { NVIDIA: 0, AMD: 0, Intel: 0, Other: 0 };
+    data.forEach(r => {
+        const gpu = (r.gpu || '').toLowerCase();
+        if (gpu.includes('nvidia') || gpu.includes('rtx') || gpu.includes('gtx') || gpu.includes('geforce') || gpu.includes('quadro')) {
+            brands.NVIDIA++;
+        } else if (gpu.includes('amd') || gpu.includes('radeon') || gpu.includes('rx')) {
+            brands.AMD++;
+        } else if (gpu.includes('intel') || gpu.includes('arc') || gpu.includes('uhd') || gpu.includes('hd graphics')) {
+            brands.Intel++;
+        } else {
+            brands.Other++;
+        }
+    });
+    return brands;
+}
+
+// Helper to get Video Driver distribution
+function getDriverDistribution(data) {
+    const drivers = { Mesa: 0, NVIDIA: 0, Other: 0, 'Not Reported': 0 };
+    data.forEach(r => {
+        const d = r.driver;
+        if (!d || d === 'N/D' || d.trim() === '') {
+            drivers['Not Reported']++;
+        } else if (d.toLowerCase().includes('mesa')) {
+            drivers.Mesa++;
+        } else if (d.toLowerCase().includes('nvidia') || d.toLowerCase().includes('nvrm')) {
+            drivers.NVIDIA++;
+        } else {
+            drivers.Other++;
+        }
+    });
+    return drivers;
+}
+
+// Doughnut Chart Renderer Helper
+function renderDoughnutChart(canvasId, labels, data, colors, borderColors) {
+    if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+    }
+    
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                borderColor: borderColors,
+                borderWidth: 1.5,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#9ca3af',
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11
+                        },
+                        padding: 12,
+                        boxWidth: 10,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleFont: {
+                        family: "'Outfit', sans-serif",
+                        size: 13,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13
+                    },
+                    padding: 12,
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                            return ` ${context.label}: ${context.raw} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            cutout: '65%'
+        }
+    });
+}
+
 // Render Interactive Charts using Chart.js
 function renderCharts() {
     // 1. CPU Single Thread Top 8 Chart
-    // Filter runs with valid CPU Single Scores
     const cpuSingleRuns = benchmarkData
         .filter(r => r.cpuSingle !== null)
         .sort((a, b) => b.cpuSingle - a.cpuSingle)
@@ -677,6 +855,112 @@ function renderCharts() {
         'GPU Score',
         'rgba(14, 165, 233, 0.85)',
         '#38bdf8'
+    );
+
+    // 4. Top 10 CPU - Most Used Chart
+    const popularCPUs = getTopHardware(benchmarkData, 'cpu', 10);
+    renderHorizontalBarChart(
+        'cpuPopularChart',
+        popularCPUs.map(c => c.name),
+        popularCPUs.map(c => c.count),
+        'Count',
+        'rgba(245, 158, 11, 0.85)',
+        '#f59e0b'
+    );
+
+    // 5. Top 10 GPU - Most Used Chart
+    const popularGPUs = getTopHardware(benchmarkData, 'gpu', 10);
+    renderHorizontalBarChart(
+        'gpuPopularChart',
+        popularGPUs.map(g => g.name),
+        popularGPUs.map(g => g.count),
+        'Count',
+        'rgba(16, 185, 129, 0.85)',
+        '#10b981'
+    );
+
+    // 6. Pie/Doughnut OS Distribution Chart
+    const osDist = getOSDistribution(benchmarkData);
+    renderDoughnutChart(
+        'osDistChart',
+        Object.keys(osDist),
+        Object.values(osDist),
+        [
+            'rgba(99, 102, 241, 0.8)',
+            'rgba(168, 85, 247, 0.8)',
+            'rgba(14, 165, 233, 0.8)',
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(244, 63, 94, 0.8)',
+            'rgba(6, 182, 212, 0.8)'
+        ],
+        [
+            '#818cf8',
+            '#c084fc',
+            '#38bdf8',
+            '#34d399',
+            '#fbbf24',
+            '#fb7185',
+            '#22d3ee'
+        ]
+    );
+
+    // 7. Pie/Doughnut CPU Brand Distribution Chart
+    const cpuBrandDist = getCPUBrandDistribution(benchmarkData);
+    renderDoughnutChart(
+        'cpuBrandDistChart',
+        Object.keys(cpuBrandDist),
+        Object.values(cpuBrandDist),
+        [
+            'rgba(244, 63, 94, 0.8)', // AMD
+            'rgba(14, 165, 233, 0.8)', // Intel
+            'rgba(156, 163, 175, 0.8)'  // Other
+        ],
+        [
+            '#fb7185',
+            '#38bdf8',
+            '#9ca3af'
+        ]
+    );
+
+    // 8. Pie/Doughnut GPU Brand Distribution Chart
+    const gpuBrandDist = getGPUBrandDistribution(benchmarkData);
+    renderDoughnutChart(
+        'gpuBrandDistChart',
+        Object.keys(gpuBrandDist),
+        Object.values(gpuBrandDist),
+        [
+            'rgba(16, 185, 129, 0.8)', // NVIDIA
+            'rgba(244, 63, 94, 0.8)', // AMD
+            'rgba(14, 165, 233, 0.8)', // Intel
+            'rgba(156, 163, 175, 0.8)'  // Other
+        ],
+        [
+            '#34d399',
+            '#fb7185',
+            '#38bdf8',
+            '#9ca3af'
+        ]
+    );
+
+    // 9. Pie/Doughnut Driver Distribution Chart
+    const driverDist = getDriverDistribution(benchmarkData);
+    renderDoughnutChart(
+        'driverDistChart',
+        Object.keys(driverDist),
+        Object.values(driverDist),
+        [
+            'rgba(168, 85, 247, 0.8)', // Mesa
+            'rgba(16, 185, 129, 0.8)', // NVIDIA
+            'rgba(6, 182, 212, 0.8)',  // Other
+            'rgba(107, 114, 128, 0.8)'  // Not Reported
+        ],
+        [
+            '#c084fc',
+            '#34d399',
+            '#22d3ee',
+            '#6b7280'
+        ]
     );
 }
 

@@ -300,6 +300,44 @@ h1, h2, h3, h4 {
     height: 320px;
 }
 
+/* Demographics Section */
+.demographics-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.section-header {
+    margin-bottom: 0.5rem;
+}
+
+.section-header h2 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+.section-header p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.usage-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.distribution-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+
+.donut-chart-canvas {
+    height: 240px;
+}
+
 /* Leaderboard Table Section */
 .leaderboard-section {
     display: flex;
@@ -548,6 +586,12 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.95rem; font-weight: 80
     .full-width-chart {
         grid-column: span 1;
     }
+    .usage-charts-grid {
+        grid-template-columns: 1fr;
+    }
+    .distribution-charts-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -580,5 +624,8 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.95rem; font-weight: 80
     }
     #search-input:focus {
         width: 100%;
+    }
+    .distribution-charts-grid {
+        grid-template-columns: 1fr;
     }
 }

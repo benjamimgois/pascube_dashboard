@@ -955,7 +955,7 @@ function getAverageScores(data, type) {
             average: Math.round(total / counts[name])
         }))
         .sort((a, b) => b.average - a.average)
-        .slice(0, 8);
+        .slice(0, 10);
 }
 
 // Helper to get Mesa or Kernel major.minor version distributions

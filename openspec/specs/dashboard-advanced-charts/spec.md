@@ -10,14 +10,14 @@ The system SHALL aggregate the average CPU Multi score for each unique CPU model
 
 #### Scenario: Rendering average score by CPU chart
 - **WHEN** the dashboard page finishes loading the benchmark data
-- **THEN** a horizontal bar chart displaying the top 8 CPU models sorted by average CPU Multi score descending is rendered
+- **THEN** a horizontal bar chart displaying the top 10 CPU models sorted by average CPU Multi score descending is rendered
 
 ### Requirement: Average GPU Score by GPU Model
 The system SHALL aggregate the average GPU score for each unique GPU model and render a horizontal bar chart of the top GPU models by average performance.
 
 #### Scenario: Rendering average score by GPU chart
 - **WHEN** the dashboard page finishes loading the benchmark data
-- **THEN** a horizontal bar chart displaying the top 8 GPU models sorted by average GPU score descending is rendered
+- **THEN** a horizontal bar chart displaying the top 10 GPU models sorted by average GPU score descending is rendered
 
 ### Requirement: Average Performance by OS
 The system SHALL aggregate the average Main Score for each unique operating system and render a horizontal bar chart comparing OS performance averages.

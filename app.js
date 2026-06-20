@@ -1177,11 +1177,11 @@ function renderDoughnutChart(canvasId, labels, data, colors, borderColors) {
 
 // Render Interactive Charts using Chart.js
 function renderCharts() {
-    // 1. CPU Single Thread Top 8 Chart
+    // 1. CPU Single Thread Top 10 Chart
     const cpuSingleRuns = benchmarkData
         .filter(r => r.cpuSingle !== null)
         .sort((a, b) => b.cpuSingle - a.cpuSingle)
-        .slice(0, 8);
+        .slice(0, 10);
     
     renderHorizontalBarChart(
         'cpuSingleChart',
@@ -1192,11 +1192,11 @@ function renderCharts() {
         '#818cf8'
     );
     
-    // 2. CPU Multi Thread Top 8 Chart
+    // 2. CPU Multi Thread Top 10 Chart
     const cpuMultiRuns = benchmarkData
         .filter(r => r.cpuMulti !== null)
         .sort((a, b) => b.cpuMulti - a.cpuMulti)
-        .slice(0, 8);
+        .slice(0, 10);
         
     renderHorizontalBarChart(
         'cpuMultiChart',
@@ -1207,11 +1207,11 @@ function renderCharts() {
         '#c084fc'
     );
     
-    // 3. GPU Performance Top 8 Chart
+    // 3. GPU Performance Top 10 Chart
     const gpuRuns = benchmarkData
         .filter(r => r.gpuScore !== null)
         .sort((a, b) => b.gpuScore - a.gpuScore)
-        .slice(0, 8);
+        .slice(0, 10);
         
     renderHorizontalBarChart(
         'gpuChart',

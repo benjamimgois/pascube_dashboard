@@ -1182,13 +1182,19 @@ function renderCharts() {
         .sort((a, b) => b.cpuSingle - a.cpuSingle)
         .slice(0, 10);
     
+    const cpuSingleScores = cpuSingleRuns.map(r => r.cpuSingle);
+    const cpuSingleMin = cpuSingleScores.length > 0 ? Math.min(...cpuSingleScores) : 0;
+    const cpuSingleXMin = Math.floor(cpuSingleMin * 0.9);
+    
     renderHorizontalBarChart(
         'cpuSingleChart',
         cpuSingleRuns.map(r => r.cpu),
-        cpuSingleRuns.map(r => r.cpuSingle),
+        cpuSingleScores,
         'CPU Single Score',
         'rgba(99, 102, 241, 0.85)',
-        '#818cf8'
+        '#818cf8',
+        undefined,
+        cpuSingleXMin
     );
     
     // 2. CPU Multi Thread Top 10 Chart
@@ -1463,7 +1469,7 @@ function renderCharts() {
 }
 
 // Horizontal Bar Chart Renderer
-function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor, xMax) {
+function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor, xMax, xMin) {
     if (chartInstances[canvasId]) {
         chartInstances[canvasId].destroy();
     }
@@ -1520,7 +1526,7 @@ function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor
             scales: {
                 x: {
                     max: xMax,
-                    min: 0,
+                    min: xMin !== undefined ? xMin : 0,
                     grid: {
                         color: 'rgba(255, 255, 255, 0.05)',
                         tickBorderDash: [3, 3]

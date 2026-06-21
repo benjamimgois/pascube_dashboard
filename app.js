@@ -835,7 +835,7 @@ function getCPUBrandDistribution(data) {
     const brands = { AMD: 0, Intel: 0, Other: 0 };
     data.forEach(r => {
         const cpu = (r.cpu || '').toLowerCase();
-        if (cpu.includes('amd') || cpu.includes('ryzen') || cpu.includes('epyc') || cpu.includes('fx') || cpu.includes('apu')) {
+        if (cpu.includes('amd') || cpu.includes('ryzen') || cpu.includes('epyc') || cpu.includes('fx') || cpu.includes('apu') || cpu.includes('deck')) {
             brands.AMD++;
         } else if (cpu.includes('intel') || cpu.includes('xeon') || cpu.includes('i3') || cpu.includes('i5') || cpu.includes('i7') || cpu.includes('i9') || cpu.includes('ultra')) {
             brands.Intel++;
@@ -853,7 +853,7 @@ function getGPUBrandDistribution(data) {
         const gpu = (r.gpu || '').toLowerCase();
         if (gpu.includes('nvidia') || gpu.includes('rtx') || gpu.includes('gtx') || gpu.includes('geforce') || gpu.includes('quadro') || gpu.includes('nvk') || gpu.includes('gt 1030')) {
             brands.NVIDIA++;
-        } else if (gpu.includes('amd') || gpu.includes('radeon') || gpu.includes('rx') || gpu.includes('r9') || gpu.includes('r7') || gpu.includes('r5') || gpu.includes('z1 extreme') || (gpu.includes('graphics') && !gpu.includes('intel'))) {
+        } else if (gpu.includes('amd') || gpu.includes('radeon') || gpu.includes('rx') || gpu.includes('r9') || gpu.includes('r7') || gpu.includes('r5') || gpu.includes('z1 extreme') || gpu.includes('deck') || (gpu.includes('graphics') && !gpu.includes('intel'))) {
             brands.AMD++;
         } else if (gpu.includes('intel') || gpu.includes('arc') || gpu.includes('uhd') || gpu.includes('hd graphics')) {
             brands.Intel++;

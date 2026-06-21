@@ -832,6 +832,187 @@ function getOSDistribution(data) {
     return finalMap;
 }
 
+// Classify a device as Handheld, Notebook, or Desktop
+function classifyDevice(r) {
+    const cpu = (r.cpu || '').toLowerCase();
+    const gpu = (r.gpu || '').toLowerCase();
+    const os = (r.os || '').toLowerCase();
+    const kernel = (r.kernel || '').toLowerCase();
+
+    // Handheld detection signatures
+    const isHandheld = 
+        cpu.includes('steam deck') || 
+        gpu.includes('steam deck') ||
+        cpu.includes('z1 extreme') || 
+        cpu.includes('z1') ||
+        os.includes('rog ally') ||
+        kernel.includes('rog ally') ||
+        os.includes('steam deck') ||
+        os.includes('deck') ||
+        os.includes('ally') ||
+        os.includes('legion go') ||
+        cpu.includes('claw') ||
+        gpu.includes('custom apu 0405') ||
+        gpu.includes('amd custom gpu 0405') ||
+        cpu.includes('custom apu 0405');
+
+    if (isHandheld) {
+        return 'Handheld';
+    }
+
+    // Notebook/Laptop detection signatures
+    const isLaptop = 
+        gpu.includes('laptop') || 
+        gpu.includes('mobile') ||
+        // Intel mobile CPUs: suffix H, HX, HK, U, Y
+        /\b(i[3579]-\d{4,5}[h|u])\b/i.test(cpu) ||
+        /\b(i[3579]-\d{5}hx)\b/i.test(cpu) ||
+        /\b(core.*?[h|u|hx|hs])\b/i.test(cpu) ||
+        // AMD mobile CPUs: suffix H, HS, HX, U. Also Ryzen AI (usually mobile)
+        /\bryzen.*?\b\d{4}(h|hs|u|hx)\b/i.test(cpu) ||
+        cpu.includes('ryzen ai') ||
+        cpu.includes('intel core m') ||
+        gpu.includes('geforce mx');
+
+    if (isLaptop) {
+        return 'Notebook';
+    }
+
+    return null;
+}
+
+// Check if a CPU name belongs to a handheld
+function isHandheldCPU(name) {
+    const lower = (name || '').toLowerCase();
+    return lower.includes('z1') || lower.includes('deck') || lower.includes('apu 0405');
+}
+
+// Check if a GPU name belongs to a handheld
+function isHandheldGPU(name) {
+    const lower = (name || '').toLowerCase();
+    return lower.includes('z1') || lower.includes('deck') || lower.includes('gpu 0405');
+}
+
+// Get Mobile distribution counts
+function getMobileDistribution(data) {
+    const dist = { Handheld: 0, Notebook: 0 };
+    data.forEach(r => {
+        const type = classifyDevice(r);
+        if (type) {
+            dist[type]++;
+        }
+    });
+    return dist;
+}
+
+// Get Mobile category averages
+function getMobileAverages(data) {
+    const handhelds = data.filter(r => classifyDevice(r) === 'Handheld');
+    const notebooks = data.filter(r => classifyDevice(r) === 'Notebook');
+
+    const getAverage = (arr, field) => {
+        let filtered = arr;
+        if (field === 'gpuScore' || field === 'mainScore') {
+            filtered = arr.filter(r => {
+                const gpuLower = (r.gpu || '').toLowerCase();
+                if (gpuLower.includes('9070') || gpuLower.includes('9060') || gpuLower.includes('4090') || gpuLower.includes('5070') || gpuLower.includes('7900') || gpuLower.includes('7800') || gpuLower.includes('6900') || gpuLower.includes('6800') || gpuLower.includes('6700') || gpuLower.includes('6750')) {
+                    if (!gpuLower.includes('laptop') && !gpuLower.includes('mobile')) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
+        const valid = filtered.map(r => r[field]).filter(val => val !== null && !isNaN(val));
+        if (valid.length === 0) return 0;
+        return Math.round(valid.reduce((sum, val) => sum + val, 0) / valid.length);
+    };
+
+    return {
+        handheld: {
+            mainScore: getAverage(handhelds, 'mainScore'),
+            cpuSingle: getAverage(handhelds, 'cpuSingle'),
+            cpuMulti: getAverage(handhelds, 'cpuMulti'),
+            gpuScore: getAverage(handhelds, 'gpuScore')
+        },
+        notebook: {
+            mainScore: getAverage(notebooks, 'mainScore'),
+            cpuSingle: getAverage(notebooks, 'cpuSingle'),
+            cpuMulti: getAverage(notebooks, 'cpuMulti'),
+            gpuScore: getAverage(notebooks, 'gpuScore')
+        }
+    };
+}
+
+// Get top mobile CPUs by average performance (using Single Thread)
+function getTopMobileCPUs(data, limit = 10) {
+    const mobileData = data.filter(r => classifyDevice(r) !== null && r.cpuSingle !== null);
+    const groups = {};
+    
+    mobileData.forEach(r => {
+        const name = normalizeCPU(r.cpu);
+        if (name && name !== 'Unknown CPU' && name !== 'N/D') {
+            if (!groups[name]) groups[name] = [];
+            groups[name].push(r.cpuSingle);
+        }
+    });
+
+    return Object.entries(groups)
+        .map(([name, scores]) => {
+            const avg = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
+            return { name, avg };
+        })
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, limit);
+}
+
+// Get top mobile GPUs by average performance (excluding desktop GPUs)
+function getTopMobileGPUs(data, limit = 10) {
+    const mobileData = data.filter(r => {
+        if (classifyDevice(r) === null) return false;
+        if (r.gpuScore === null) return false;
+        
+        // Filter out desktop GPUs (eGPUs or incorrect reports)
+        const gpuLower = (r.gpu || '').toLowerCase();
+        if (gpuLower.includes('9070') || gpuLower.includes('9060') || gpuLower.includes('4090') || gpuLower.includes('5070') || gpuLower.includes('7900') || gpuLower.includes('7800') || gpuLower.includes('6900') || gpuLower.includes('6800') || gpuLower.includes('6700') || gpuLower.includes('6750')) {
+            if (!gpuLower.includes('laptop') && !gpuLower.includes('mobile')) {
+                return false;
+            }
+        }
+        return true;
+    });
+    
+    const groups = {};
+    mobileData.forEach(r => {
+        const name = normalizeGPU(r.gpu);
+        if (name && name !== 'Unknown GPU' && name !== 'N/D') {
+            if (!groups[name]) groups[name] = [];
+            groups[name].push(r.gpuScore);
+        }
+    });
+
+    return Object.entries(groups)
+        .map(([name, scores]) => {
+            const avg = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
+            return { name, avg };
+        })
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, limit);
+}
+
+// Get top handheld runs by Main Score
+function getTopHandheldRuns(data, limit = 10) {
+    const handheldData = data.filter(r => classifyDevice(r) === 'Handheld' && r.mainScore !== null);
+    
+    return handheldData
+        .sort((a, b) => b.mainScore - a.mainScore)
+        .slice(0, limit)
+        .map(r => ({
+            label: `${r.user || 'Anonymous'} (${normalizeCPU(r.cpu)})`,
+            score: r.mainScore
+        }));
+}
+
 // Helper to get CPU Brand distribution
 function getCPUBrandDistribution(data) {
     const brands = { AMD: 0, Intel: 0, Other: 0 };
@@ -1509,6 +1690,97 @@ function renderCharts() {
             '#9ca3af'
         ]
     );
+
+    // Mobile Charts Rendering
+    if (!document.getElementById('mobileDistChart')) return;
+
+    // 16. Mobile distribution
+    const mobileDist = getMobileDistribution(benchmarkData);
+    renderDoughnutChart(
+        'mobileDistChart',
+        Object.keys(mobileDist),
+        Object.values(mobileDist),
+        [
+            'rgba(99, 102, 241, 0.8)', // Handheld - Indigo
+            'rgba(245, 158, 11, 0.8)'   // Notebook - Amber
+        ],
+        [
+            '#818cf8',
+            '#fbbf24'
+        ]
+    );
+
+    // 17. Notebook vs Handheld Averages comparison
+    const mobileAvgs = getMobileAverages(benchmarkData);
+    const avgLabels = ['Main Score', 'CPU Single', 'CPU Multi', 'GPU Score'];
+    const avgDatasets = [
+        {
+            label: 'Handheld',
+            data: [
+                mobileAvgs.handheld.mainScore,
+                mobileAvgs.handheld.cpuSingle,
+                mobileAvgs.handheld.cpuMulti,
+                mobileAvgs.handheld.gpuScore
+            ],
+            backgroundColor: 'rgba(99, 102, 241, 0.85)',
+            borderColor: '#818cf8',
+            borderWidth: 1.5,
+            borderRadius: 6,
+            borderSkipped: false,
+            barPercentage: 0.8,
+            categoryPercentage: 0.6
+        },
+        {
+            label: 'Notebook',
+            data: [
+                mobileAvgs.notebook.mainScore,
+                mobileAvgs.notebook.cpuSingle,
+                mobileAvgs.notebook.cpuMulti,
+                mobileAvgs.notebook.gpuScore
+            ],
+            backgroundColor: 'rgba(245, 158, 11, 0.85)',
+            borderColor: '#fbbf24',
+            borderWidth: 1.5,
+            borderRadius: 6,
+            borderSkipped: false,
+            barPercentage: 0.8,
+            categoryPercentage: 0.6
+        }
+    ];
+    renderGroupedBarChart('mobileAveragesChart', avgLabels, avgDatasets);
+
+    // 18. Top 10 Mobile CPUs
+    const topMobileCPUs = getTopMobileCPUs(benchmarkData, 10);
+    renderHorizontalBarChart(
+        'mobileCpuChart',
+        topMobileCPUs.map(c => c.name),
+        topMobileCPUs.map(c => c.avg),
+        'Avg CPU Single Score',
+        topMobileCPUs.map(c => isHandheldCPU(c.name) ? 'rgba(99, 102, 241, 0.85)' : 'rgba(168, 85, 247, 0.85)'),
+        topMobileCPUs.map(c => isHandheldCPU(c.name) ? '#818cf8' : '#c084fc')
+    );
+
+    // 19. Top 10 Mobile GPUs
+    const topMobileGPUs = getTopMobileGPUs(benchmarkData, 10);
+    renderHorizontalBarChart(
+        'mobileGpuChart',
+        topMobileGPUs.map(g => g.name),
+        topMobileGPUs.map(g => g.avg),
+        'Avg GPU Score',
+        topMobileGPUs.map(g => isHandheldGPU(g.name) ? 'rgba(99, 102, 241, 0.85)' : 'rgba(14, 165, 233, 0.85)'),
+        topMobileGPUs.map(g => isHandheldGPU(g.name) ? '#818cf8' : '#38bdf8')
+    );
+
+    // 20. Top 10 Handheld Overall
+    const topHandhelds = getTopHandheldRuns(benchmarkData, 10);
+    renderHorizontalBarChart(
+        'handheldOverallChart',
+        topHandhelds.map(h => h.label),
+        topHandhelds.map(h => h.score),
+        'Main Score',
+        'rgba(16, 185, 129, 0.85)',
+        '#10b981'
+    );
 }
 
 // Horizontal Bar Chart Renderer
@@ -1693,6 +1965,85 @@ function makeChartScrollable(canvasId, allLabels, allData, datasetLabel, barColo
         e.preventDefault();
         overlay.scrollTop += e.deltaY;
     };
+}
+
+// Render Grouped Vertical Bar Chart
+function renderGroupedBarChart(canvasId, labels, datasets) {
+    if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+    }
+    
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            family: "'Inter', sans-serif"
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: {
+                            family: "'Inter', sans-serif"
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#f3f4f6',
+                        font: {
+                            family: "'Inter', sans-serif",
+                            size: 11
+                        },
+                        boxWidth: 12,
+                        padding: 10
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleFont: {
+                        family: "'Outfit', sans-serif",
+                        size: 13,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        family: "'Inter', sans-serif",
+                        size: 13
+                    },
+                    padding: 12,
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    borderWidth: 1,
+                    cornerRadius: 8
+                }
+            }
+        }
+    });
 }
 
 // Show Error state in table

@@ -391,6 +391,26 @@ h1, h2, h3, h4 {
     gap: 1.5rem;
 }
 
+/* Mobile Devices Section */
+.mobile-charts-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.mobile-overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1.5rem;
+}
+
+.mobile-performance-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
 /* Leaderboard Table Section */
 .leaderboard-section {
     display: flex;
@@ -657,6 +677,15 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.85rem; font-weight: 80
     .histogram-chart {
         grid-column: span 2;
     }
+    .mobile-overview-grid {
+        grid-template-columns: 1fr;
+    }
+    .mobile-performance-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .mobile-performance-grid .chart-container-wrapper:nth-child(3) {
+        grid-column: span 2;
+    }
 }
 
 @media (max-width: 768px) {
@@ -700,6 +729,12 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.85rem; font-weight: 80
         grid-template-columns: 1fr;
     }
     .histogram-chart {
+        grid-column: span 1;
+    }
+    .mobile-performance-grid {
+        grid-template-columns: 1fr;
+    }
+    .mobile-performance-grid .chart-container-wrapper:nth-child(3) {
         grid-column: span 1;
     }
 }

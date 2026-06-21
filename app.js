@@ -1013,6 +1013,18 @@ function getTopHandheldRuns(data, limit = 10) {
         }));
 }
 
+// Get Mobile OS distribution
+function getMobileOSDistribution(data) {
+    const mobileData = data.filter(r => classifyDevice(r) !== null);
+    return getOSDistribution(mobileData);
+}
+
+// Get Handheld OS distribution
+function getHandheldOSDistribution(data) {
+    const handheldData = data.filter(r => classifyDevice(r) === 'Handheld');
+    return getOSDistribution(handheldData);
+}
+
 // Helper to get CPU Brand distribution
 function getCPUBrandDistribution(data) {
     const brands = { AMD: 0, Intel: 0, Other: 0 };
@@ -1708,6 +1720,49 @@ function renderCharts() {
             '#818cf8',
             '#fbbf24'
         ]
+    );
+
+    // Helper to get colors for OS labels
+    const getMobileOsColors = (labels) => {
+        const bgColors = [];
+        const borderColors = [];
+        let colorIdx = 0;
+        labels.forEach(label => {
+            if (label === 'Other') {
+                bgColors.push('rgba(107, 114, 128, 0.8)'); // Gray
+                borderColors.push('#9ca3af');
+            } else {
+                const color = osPalette[colorIdx % osPalette.length];
+                bgColors.push(color.bg);
+                borderColors.push(color.border);
+                colorIdx++;
+            }
+        });
+        return { bgColors, borderColors };
+    };
+
+    // 16a. Mobile OS Distribution
+    const mobileOsDist = getMobileOSDistribution(benchmarkData);
+    const mobileOsLabels = Object.keys(mobileOsDist);
+    const mobileOsColors = getMobileOsColors(mobileOsLabels);
+    renderDoughnutChart(
+        'mobileOsDistChart',
+        mobileOsLabels,
+        Object.values(mobileOsDist),
+        mobileOsColors.bgColors,
+        mobileOsColors.borderColors
+    );
+
+    // 16b. Handheld OS Distribution
+    const handheldOsDist = getHandheldOSDistribution(benchmarkData);
+    const handheldOsLabels = Object.keys(handheldOsDist);
+    const handheldOsColors = getMobileOsColors(handheldOsLabels);
+    renderDoughnutChart(
+        'handheldOsDistChart',
+        handheldOsLabels,
+        Object.values(handheldOsDist),
+        handheldOsColors.bgColors,
+        handheldOsColors.borderColors
     );
 
     // 17. Notebook vs Handheld Averages comparison

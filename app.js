@@ -1203,19 +1203,13 @@ function renderCharts() {
         .sort((a, b) => b.cpuMulti - a.cpuMulti)
         .slice(0, 10);
         
-    const cpuMultiScores = cpuMultiRuns.map(r => r.cpuMulti);
-    const cpuMultiMin = cpuMultiScores.length > 0 ? Math.min(...cpuMultiScores) : 0;
-    const cpuMultiXMin = Math.floor(cpuMultiMin * 0.9);
-    
     renderHorizontalBarChart(
         'cpuMultiChart',
         cpuMultiRuns.map(r => r.cpu),
-        cpuMultiScores,
+        cpuMultiRuns.map(r => r.cpuMulti),
         'CPU Multi Score',
         'rgba(168, 85, 247, 0.85)',
-        '#c084fc',
-        undefined,
-        cpuMultiXMin
+        '#c084fc'
     );
     
     // 3. GPU Performance Top 10 Chart

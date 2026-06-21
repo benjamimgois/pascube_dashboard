@@ -136,6 +136,45 @@ function setupEventListeners() {
             handleSort(column);
         });
     });
+
+    // Leaderboard Modal Toggle listeners
+    const modal = document.getElementById('leaderboard-modal');
+    const openBtn = document.getElementById('leaderboard-btn');
+    const closeBtn = document.getElementById('close-modal-btn');
+    
+    if (openBtn && modal) {
+        openBtn.addEventListener('click', () => {
+            modal.showModal();
+            document.body.classList.add('modal-open');
+        });
+    }
+    if (closeBtn && modal) {
+        closeBtn.addEventListener('click', () => {
+            modal.close();
+        });
+    }
+    if (modal) {
+        modal.addEventListener('close', () => {
+            document.body.classList.remove('modal-open');
+        });
+    }
+    
+    // Fallback for browsers without closedby support
+    if (modal && !('closedBy' in HTMLDialogElement.prototype)) {
+        modal.addEventListener('click', (event) => {
+            if (event.target !== modal) return;
+            const rect = modal.getBoundingClientRect();
+            const isDialogContent = (
+                rect.top <= event.clientY &&
+                event.clientY <= rect.top + rect.height &&
+                rect.left <= event.clientX &&
+                event.clientX <= rect.left + rect.width
+            );
+            if (!isDialogContent) {
+                modal.close();
+            }
+        });
+    }
 }
 
 // Fetch Google Sheets Data using JSONP to bypass CORS restrictions
@@ -750,6 +789,14 @@ function showCopyFeedback(element) {
             lucide.createIcons();
         }
     }, 1500);
+}
+
+// Helper to parse dates in format DD/MM/YYYY HH:MM:SS
+function parseDate(dateStr) {
+    if (!dateStr || dateStr === 'N/D') return null;
+    const parts = dateStr.split(' ')[0].split('/');
+    if (parts.length < 3) return null;
+    return new Date(parts[2], parts[1] - 1, parts[0]);
 }
 
 // Helper to normalize CPU names for popularity chart
@@ -1881,6 +1928,142 @@ function renderCharts() {
         'rgba(16, 185, 129, 0.85)',
         '#10b981'
     );
+
+    // 21. PascubeDB Community Insights Section Calculations & Rendering
+    if (document.getElementById('stat-unique-clients')) {
+        // 1. Unique Contributors
+        const uniqueClients = new Set();
+        benchmarkData.forEach(r => {
+            if (r.clientId && r.clientId !== 'N/D') {
+                uniqueClients.add(r.clientId);
+            }
+        });
+        document.getElementById('stat-unique-clients').textContent = uniqueClients.size.toLocaleString();
+
+        // 2. Hardware Models
+        const uniqueCPUs = new Set();
+        const uniqueGPUs = new Set();
+        benchmarkData.forEach(r => {
+            const cpuNorm = normalizeCPU(r.cpu);
+            const gpuNorm = normalizeGPU(r.gpu);
+            if (cpuNorm && cpuNorm !== 'Unknown CPU' && cpuNorm !== 'N/D') {
+                uniqueCPUs.add(cpuNorm);
+            }
+            if (gpuNorm && gpuNorm !== 'Unknown GPU' && gpuNorm !== 'N/D') {
+                uniqueGPUs.add(gpuNorm);
+            }
+        });
+        document.getElementById('stat-unique-hardware').textContent = (uniqueCPUs.size + uniqueGPUs.size).toLocaleString();
+
+        // 3. Submissions in last 7 days
+        const parsedDates = benchmarkData
+            .map(r => parseDate(r.dateTime))
+            .filter(d => d !== null);
+        const maxDate = parsedDates.length > 0 ? new Date(Math.max(...parsedDates)) : new Date();
+        const sevenDaysAgo = new Date(maxDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+        
+        const last7DaysCount = benchmarkData.filter(r => {
+            const d = parseDate(r.dateTime);
+            return d !== null && d >= sevenDaysAgo;
+        }).length;
+        document.getElementById('stat-recent-submissions').textContent = last7DaysCount.toLocaleString();
+
+        // 4. Daily Submissions Activity (Last 30 Days)
+        const activityData = {};
+        const activityLabels = [];
+        for (let i = 29; i >= 0; i--) {
+            const d = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate() - i);
+            const dateString = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+            activityData[dateString] = 0;
+            activityLabels.push(dateString);
+        }
+        
+        benchmarkData.forEach(r => {
+            const d = parseDate(r.dateTime);
+            if (d) {
+                const diffDays = Math.floor((maxDate.getTime() - d.getTime()) / (24 * 60 * 60 * 1000));
+                if (diffDays >= 0 && diffDays < 30) {
+                    const dateString = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    if (activityData[dateString] !== undefined) {
+                        activityData[dateString]++;
+                    }
+                }
+            }
+        });
+        
+        const activityCounts = activityLabels.map(label => activityData[label]);
+        
+        // Render Submission Activity Line Chart
+        const activityChartEl = document.getElementById('submissionActivityChart');
+        if (activityChartEl) {
+            if (chartInstances['submissionActivityChart']) {
+                chartInstances['submissionActivityChart'].destroy();
+            }
+            const actCtx = activityChartEl.getContext('2d');
+            const gradient = actCtx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(99, 102, 241, 0.35)');
+            gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+            
+            chartInstances['submissionActivityChart'] = new Chart(actCtx, {
+                type: 'line',
+                data: {
+                    labels: activityLabels,
+                    datasets: [{
+                        label: 'Submissions',
+                        data: activityCounts,
+                        borderColor: '#818cf8',
+                        borderWidth: 3,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#818cf8',
+                        pointBorderColor: 'rgba(255, 255, 255, 0.8)',
+                        pointBorderWidth: 1.5,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleFont: { family: "'Outfit', sans-serif", size: 13, weight: 'bold' },
+                            bodyFont: { family: "'Inter', sans-serif", size: 13 },
+                            padding: 12,
+                            borderColor: 'rgba(255, 255, 255, 0.15)',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Submissions: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', tickBorderDash: [3, 3] },
+                            ticks: { color: '#9ca3af', font: { family: "'Inter', sans-serif", size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', tickBorderDash: [3, 3] },
+                            ticks: {
+                                color: '#9ca3af',
+                                font: { family: "'Inter', sans-serif", size: 10 },
+                                stepSize: 1,
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    }
 }
 
 // Horizontal Bar Chart Renderer

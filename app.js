@@ -207,11 +207,16 @@ function processGvizData(jsonResponse) {
             return null;
         }
         
+        let gpuVal = getVal(3) || 'Unknown GPU';
+        if (gpuVal.trim() === 'Graphics') {
+            gpuVal = 'Radeon Graphics';
+        }
+        
         return {
             user: getVal(0) || 'Anonymous',
             cpu: getVal(1) || 'Unknown CPU',
             ram: getVal(2) || 'N/D',
-            gpu: getVal(3) || 'Unknown GPU',
+            gpu: gpuVal,
             vram: getVal(4) || 'N/D',
             driver: getVal(5) || 'N/D',
             kernel: getVal(6) || 'N/D',
@@ -340,11 +345,16 @@ function processCSVData(csvText) {
     benchmarkData = dataRows.map(row => {
         if (row.length < 5) return null; // skip malformed lines
         
+        let gpuVal = row[3] || 'Unknown GPU';
+        if (gpuVal.trim() === 'Graphics') {
+            gpuVal = 'Radeon Graphics';
+        }
+        
         return {
             user: row[0] || 'Anonymous',
             cpu: row[1] || 'Unknown CPU',
             ram: row[2] || 'N/D',
-            gpu: row[3] || 'Unknown GPU',
+            gpu: gpuVal,
             vram: row[4] || 'N/D',
             driver: row[5] || 'N/D',
             kernel: row[6] || 'N/D',

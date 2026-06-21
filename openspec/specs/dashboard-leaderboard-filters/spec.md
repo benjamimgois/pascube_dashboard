@@ -25,7 +25,7 @@ The system SHALL display a GPU Model select dropdown in the leaderboard filters.
 The system SHALL display a RAM Size select dropdown in the leaderboard filters.
 - The options SHALL be sorted numerically by capacity in GB (e.g. 8GB < 12GB < 16GB < 32GB).
 - Selecting a specific RAM size SHALL display only benchmark runs matching that RAM size.
-- The default option "All RAM Sizes" SHALL apply no RAM size filtering.
+- The default option "ALL RAM" SHALL apply no RAM size filtering.
 
 #### Scenario: Selecting a RAM Size filter with numeric sorting
 - **WHEN** the RAM size filter dropdown options are populated and sorted numerically
@@ -35,7 +35,7 @@ The system SHALL display a RAM Size select dropdown in the leaderboard filters.
 The system SHALL display a VRAM Size select dropdown in the leaderboard filters.
 - The options SHALL be sorted numerically by capacity in GB (e.g. 4GB < 6GB < 8GB < 24GB).
 - Selecting a specific VRAM size SHALL display only benchmark runs matching that VRAM size.
-- The default option "All VRAM Sizes" SHALL apply no VRAM size filtering.
+- The default option "ALL VRAM" SHALL apply no VRAM size filtering.
 
 #### Scenario: Selecting a VRAM Size filter with numeric sorting
 - **WHEN** the VRAM size filter dropdown options are populated and sorted numerically

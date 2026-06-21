@@ -551,7 +551,7 @@ function populateFilters() {
     });
     
     // 1. Populate OS
-    osFilter.innerHTML = '<option value="">All Operating Systems</option>';
+    osFilter.innerHTML = '<option value="">ALL OS</option>';
     Array.from(osList).sort().forEach(os => {
         const option = document.createElement('option');
         option.value = os;
@@ -587,7 +587,7 @@ function populateFilters() {
     }
     
     // 4. Populate RAM (Numeric Sort)
-    ramFilter.innerHTML = '<option value="">All RAM Sizes</option>';
+    ramFilter.innerHTML = '<option value="">ALL RAM</option>';
     Array.from(ramList).sort((a, b) => parseGB(a) - parseGB(b)).forEach(ram => {
         const option = document.createElement('option');
         option.value = ram;
@@ -599,7 +599,7 @@ function populateFilters() {
     }
     
     // 5. Populate VRAM (Numeric Sort)
-    vramFilter.innerHTML = '<option value="">All VRAM Sizes</option>';
+    vramFilter.innerHTML = '<option value="">ALL VRAM</option>';
     Array.from(vramList).sort((a, b) => parseGB(a) - parseGB(b)).forEach(vram => {
         const option = document.createElement('option');
         option.value = vram;

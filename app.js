@@ -1008,7 +1008,7 @@ function getTopHandheldRuns(data, limit = 10) {
         .sort((a, b) => b.mainScore - a.mainScore)
         .slice(0, limit)
         .map(r => ({
-            label: `${r.user || 'Anonymous'} (${normalizeCPU(r.cpu)})`,
+            label: r.user && r.user !== 'Anonymous' ? `${r.user} (${normalizeCPU(r.cpu)})` : normalizeCPU(r.cpu),
             score: r.mainScore
         }));
 }

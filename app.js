@@ -959,14 +959,15 @@ function getTopMobileCPUs(data, limit = 10) {
         const name = normalizeCPU(r.cpu);
         if (name && name !== 'Unknown CPU' && name !== 'N/D') {
             if (!groups[name]) groups[name] = [];
-            groups[name].push(r.cpuSingle);
+            groups[name].push(r);
         }
     });
 
     return Object.entries(groups)
-        .map(([name, scores]) => {
-            const avg = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
-            return { name, avg };
+        .map(([name, runs]) => {
+            const avg = Math.round(runs.reduce((sum, r) => sum + r.cpuSingle, 0) / runs.length);
+            const bestRun = runs.reduce((best, current) => current.cpuSingle > best.cpuSingle ? current : best, runs[0]);
+            return { name, avg, clientId: bestRun.clientId };
         })
         .sort((a, b) => b.avg - a.avg)
         .slice(0, limit);
@@ -993,14 +994,15 @@ function getTopMobileGPUs(data, limit = 10) {
         const name = normalizeGPU(r.gpu);
         if (name && name !== 'Unknown GPU' && name !== 'N/D') {
             if (!groups[name]) groups[name] = [];
-            groups[name].push(r.gpuScore);
+            groups[name].push(r);
         }
     });
 
     return Object.entries(groups)
-        .map(([name, scores]) => {
-            const avg = Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
-            return { name, avg };
+        .map(([name, runs]) => {
+            const avg = Math.round(runs.reduce((sum, r) => sum + r.gpuScore, 0) / runs.length);
+            const bestRun = runs.reduce((best, current) => current.gpuScore > best.gpuScore ? current : best, runs[0]);
+            return { name, avg, clientId: bestRun.clientId };
         })
         .sort((a, b) => b.avg - a.avg)
         .slice(0, limit);
@@ -1429,7 +1431,8 @@ function renderCharts() {
         'rgba(99, 102, 241, 0.85)',
         '#818cf8',
         undefined,
-        cpuSingleXMin
+        cpuSingleXMin,
+        cpuSingleRuns.map(r => r.clientId)
     );
     
     // 2. CPU Multi Thread Top 10 Chart
@@ -1444,7 +1447,10 @@ function renderCharts() {
         cpuMultiRuns.map(r => r.cpuMulti),
         'CPU Multi Score',
         'rgba(168, 85, 247, 0.85)',
-        '#c084fc'
+        '#c084fc',
+        undefined,
+        undefined,
+        cpuMultiRuns.map(r => r.clientId)
     );
     
     // 3. GPU Performance Top 10 Chart
@@ -1459,7 +1465,10 @@ function renderCharts() {
         gpuRuns.map(r => r.gpuScore),
         'GPU Score',
         'rgba(14, 165, 233, 0.85)',
-        '#38bdf8'
+        '#38bdf8',
+        undefined,
+        undefined,
+        gpuRuns.map(r => r.clientId)
     );
 
     // 4. Top 10 CPU - Most Used Chart
@@ -1818,7 +1827,10 @@ function renderCharts() {
         topMobileCPUs.map(c => c.avg),
         'Avg CPU Single Score',
         topMobileCPUs.map(c => isHandheldCPU(c.name) ? 'rgba(99, 102, 241, 0.85)' : 'rgba(168, 85, 247, 0.85)'),
-        topMobileCPUs.map(c => isHandheldCPU(c.name) ? '#818cf8' : '#c084fc')
+        topMobileCPUs.map(c => isHandheldCPU(c.name) ? '#818cf8' : '#c084fc'),
+        undefined,
+        undefined,
+        topMobileCPUs.map(c => c.clientId)
     );
 
     // 19. Top 10 Mobile GPUs
@@ -1829,7 +1841,10 @@ function renderCharts() {
         topMobileGPUs.map(g => g.avg),
         'Avg GPU Score',
         topMobileGPUs.map(g => isHandheldGPU(g.name) ? 'rgba(99, 102, 241, 0.85)' : 'rgba(14, 165, 233, 0.85)'),
-        topMobileGPUs.map(g => isHandheldGPU(g.name) ? '#818cf8' : '#38bdf8')
+        topMobileGPUs.map(g => isHandheldGPU(g.name) ? '#818cf8' : '#38bdf8'),
+        undefined,
+        undefined,
+        topMobileGPUs.map(g => g.clientId)
     );
 
     // 20. Top 10 Handheld Overall
@@ -1845,7 +1860,7 @@ function renderCharts() {
 }
 
 // Horizontal Bar Chart Renderer
-function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor, xMax, xMin) {
+function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor, xMax, xMin, clientIds) {
     if (chartInstances[canvasId]) {
         chartInstances[canvasId].destroy();
     }
@@ -1866,6 +1881,7 @@ function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor
                 borderRadius: 6,
                 borderSkipped: false,
                 barPercentage: 0.65,
+                clientIds: clientIds
             }]
         },
         options: {
@@ -1894,7 +1910,15 @@ function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor
                     displayColors: false,
                     callbacks: {
                         label: function(context) {
-                            return `${context.dataset.label}: ${context.parsed.x.toLocaleString()}`;
+                            const lines = [`${context.dataset.label}: ${context.parsed.x.toLocaleString()}`];
+                            if (context.dataset.clientIds && context.dataset.clientIds[context.dataIndex]) {
+                                const clientId = context.dataset.clientIds[context.dataIndex];
+                                const displayId = (clientId && clientId !== 'N/D') 
+                                    ? (clientId.length > 8 ? clientId.substring(0, 8) : clientId)
+                                    : 'N/D';
+                                lines.push(`Client ID: ${displayId}`);
+                            }
+                            return lines;
                         }
                     }
                 }

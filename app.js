@@ -1463,7 +1463,7 @@ function renderCharts() {
 }
 
 // Horizontal Bar Chart Renderer
-function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor) {
+function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor, borderColor, xMax) {
     if (chartInstances[canvasId]) {
         chartInstances[canvasId].destroy();
     }
@@ -1519,6 +1519,8 @@ function renderHorizontalBarChart(canvasId, labels, data, datasetLabel, barColor
             },
             scales: {
                 x: {
+                    max: xMax,
+                    min: 0,
                     grid: {
                         color: 'rgba(255, 255, 255, 0.05)',
                         tickBorderDash: [3, 3]
@@ -1560,7 +1562,17 @@ function makeChartScrollable(canvasId, allLabels, allData, datasetLabel, barColo
     const initialLabels = allLabels.slice(0, visibleCount);
     const initialData = allData.slice(0, visibleCount);
     
-    renderHorizontalBarChart(canvasId, initialLabels, initialData, datasetLabel, barColor, borderColor);
+    // Find the maximum value in the entire dataset to lock the X-axis scale
+    const xMax = allData.length > 0 ? Math.max(...allData) : undefined;
+    
+    // Check if initial visible items all have score < 1000
+    const initialMax = initialData.length > 0 ? Math.max(...initialData) : 0;
+    let initialXMax = xMax;
+    if (xMax !== undefined && initialMax < 1000) {
+        initialXMax = xMax / 2;
+    }
+    
+    renderHorizontalBarChart(canvasId, initialLabels, initialData, datasetLabel, barColor, borderColor, initialXMax);
     
     const chart = chartInstances[canvasId];
     if (!chart) return;
@@ -1608,6 +1620,16 @@ function makeChartScrollable(canvasId, allLabels, allData, datasetLabel, barColo
             
             const newLabels = allLabels.slice(startIndex, startIndex + visibleCount);
             const newData = allData.slice(startIndex, startIndex + visibleCount);
+            
+            // Adjust X-axis scale: if all currently visible items are < 1000, reduce max by half
+            const currentMax = newData.length > 0 ? Math.max(...newData) : 0;
+            if (xMax !== undefined) {
+                if (currentMax < 1000) {
+                    chart.options.scales.x.max = xMax / 2;
+                } else {
+                    chart.options.scales.x.max = xMax;
+                }
+            }
             
             chart.data.labels = newLabels;
             chart.data.datasets[0].data = newData;

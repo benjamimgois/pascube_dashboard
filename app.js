@@ -1378,7 +1378,7 @@ function getAverageScores(data, type) {
         .sort((a, b) => b.average - a.average);
 }
 
-// Helper to get Mesa or Kernel major.minor version distributions
+// Helper to get Mesa, Kernel or NVIDIA major.minor version distributions
 function getVersionDistribution(data, type) {
     const counts = {};
     data.forEach(r => {
@@ -1395,13 +1395,28 @@ function getVersionDistribution(data, type) {
             if (match) {
                 version = match[1];
             }
+        } else if (type === 'nvidia') {
+            const d = r.driver || '';
+            if (d.includes('NVRM') || d.includes('NVIDIA')) {
+                const match = d.match(/NVRM version:.*?(\d+\.\d+)/i);
+                if (match) {
+                    version = match[1];
+                }
+            } else {
+                return;
+            }
         }
         
         if (version) {
             counts[version] = (counts[version] || 0) + 1;
         } else {
             const rawVal = type === 'mesa' ? r.driver : r.kernel;
-            if (rawVal && rawVal !== 'N/D' && rawVal.trim() !== '') {
+            if (type === 'nvidia') {
+                const d = r.driver || '';
+                if (d.includes('NVRM') || d.includes('NVIDIA')) {
+                    counts['Other'] = (counts['Other'] || 0) + 1;
+                }
+            } else if (rawVal && rawVal !== 'N/D' && rawVal.trim() !== '') {
                 counts['Other'] = (counts['Other'] || 0) + 1;
             }
         }
@@ -1930,6 +1945,28 @@ function renderCharts() {
             '#38bdf8',
             '#fbbf24',
             '#fb7185',
+            '#9ca3af'
+        ]
+    );
+
+    // 15b. NVIDIA Driver version distribution
+    const nvidiaVersions = getVersionDistribution(benchmarkData, 'nvidia');
+    renderDoughnutChart(
+        'nvidiaVersionChart',
+        Object.keys(nvidiaVersions),
+        Object.values(nvidiaVersions),
+        [
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(99, 102, 241, 0.8)',
+            'rgba(168, 85, 247, 0.8)',
+            'rgba(245, 158, 11, 0.8)',
+            'rgba(156, 163, 175, 0.8)'
+        ],
+        [
+            '#34d399',
+            '#818cf8',
+            '#c084fc',
+            '#fbbf24',
             '#9ca3af'
         ]
     );

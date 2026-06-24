@@ -1216,13 +1216,12 @@ function getTopHandheldRuns(data, limit = 10) {
         }));
 }
 
-// Get SBC label — CPU name with productName on second line
+// Get SBC label for runs chart — product name only
 function getSbcLabel(r) {
-    const cpu = normalizeCPU(r.cpu);
     if (r.productName && r.productName !== 'N/D') {
-        return `${cpu}\n${r.productName}`;
+        return r.productName;
     }
-    return cpu;
+    return normalizeCPU(r.cpu);
 }
 
 // Get top SBC runs by Main Score

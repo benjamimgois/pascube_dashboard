@@ -953,7 +953,9 @@ function normalizeGPU(name) {
     clean = clean.replace(/\s+Graphics.*/i, ''); // strip " Graphics"
     clean = clean.replace(/\(tm\)/gi, '');
     clean = clean.replace(/\(R\)/gi, '');
-    return clean.trim();
+    clean = clean.trim();
+    if (/^Vega\s*\d|^Radeon.*Vega|^RX\s*Vega/i.test(clean)) return 'AMD Vega';
+    return clean;
 }
 
 // Helper to get top hardware by frequency

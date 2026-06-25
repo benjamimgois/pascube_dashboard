@@ -1758,6 +1758,156 @@ function renderDoughnutChart(canvasId, labels, data, colors, borderColors) {
     });
 }
 
+// OS vs Hardware Scatter Chart Renderer
+const OS_COLORS = {
+    'Ubuntu': { bg: 'rgba(228, 69, 33, 0.7)', border: '#e44521' },
+    'Fedora': { bg: 'rgba(60, 110, 179, 0.7)', border: '#3c6eb3' },
+    'Arch': { bg: 'rgba(23, 147, 209, 0.7)', border: '#1793d1' },
+    'Arch Linux': { bg: 'rgba(23, 147, 209, 0.7)', border: '#1793d1' },
+    'SteamOS': { bg: 'rgba(0, 147, 181, 0.7)', border: '#0093b5' },
+    'Bazzite': { bg: 'rgba(255, 107, 53, 0.7)', border: '#ff6b35' },
+    'CachyOS': { bg: 'rgba(139, 92, 246, 0.7)', border: '#8b5cf6' },
+    'Nobara': { bg: 'rgba(239, 68, 68, 0.7)', border: '#ef4444' },
+    'Linux Mint': { bg: 'rgba(104, 191, 89, 0.7)', border: '#68bf59' },
+    'Pop!_OS': { bg: 'rgba(193, 129, 50, 0.7)', border: '#c18132' }
+};
+const OS_OTHER_COLOR = { bg: 'rgba(156, 163, 175, 0.5)', border: '#9ca3af' };
+
+function getOSColor(os) {
+    if (!os) return OS_OTHER_COLOR;
+    const osClean = os.split(' ')[0];
+    const match = OS_COLORS[osClean] || OS_COLORS[os];
+    return match || OS_OTHER_COLOR;
+}
+
+function renderOSHardwareScatterChart(canvasId, data) {
+    if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+    }
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const osGroups = {};
+    data.points.forEach(p => {
+        const osName = p.os || 'Other';
+        if (!osGroups[osName]) osGroups[osName] = [];
+        osGroups[osName].push(p);
+    });
+
+    const datasets = Object.entries(osGroups).map(([osName, pts]) => {
+        const color = getOSColor(osName);
+        return {
+            label: osName,
+            data: pts.map(p => ({ x: p.x, y: p.y })),
+            backgroundColor: color.bg,
+            borderColor: color.border,
+            borderWidth: 1.5,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointHitRadius: 10,
+            _points: pts
+        };
+    });
+
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#9ca3af',
+                        font: { family: "'Inter', sans-serif", size: 11 },
+                        padding: 12,
+                        boxWidth: 10,
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleFont: { family: "'Outfit', sans-serif", size: 13, weight: 'bold' },
+                    bodyFont: { family: "'Inter', sans-serif", size: 13 },
+                    padding: 12,
+                    borderColor: 'rgba(255, 255, 255, 0.15)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    callbacks: {
+                        title: function(items) {
+                            const p = items[0];
+                            const pts = p.dataset._points;
+                            if (pts && pts[p.dataIndex]) return pts[p.dataIndex].hardwareLabel;
+                            return '';
+                        },
+                        label: function(context) {
+                            const pts = context.dataset._points;
+                            if (!pts || !pts[context.dataIndex]) return '';
+                            const p = pts[context.dataIndex];
+                            const lines = [
+                                `OS: ${p.os || 'N/D'}`,
+                                `Avg Score: ${p.y.toLocaleString()}`,
+                                `Samples: ${p.count || 1}`,
+                                `User: ${p.user || 'N/D'}`
+                            ];
+                            if (p.clientId && p.clientId !== 'N/D') {
+                                lines.push(`Client: ${p.clientId.length > 8 ? p.clientId.substring(0, 8) : p.clientId}`);
+                            }
+                            if (p.kernel && p.kernel !== 'N/D') lines.push(`Kernel: ${p.kernel}`);
+                            if (p.driver && p.driver !== 'N/D') lines.push(`Driver: ${p.driver}`);
+                            return lines;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    offset: true,
+                    min: -0.5,
+                    max: data.hwLabels.length - 0.5,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)', tickBorderDash: [3, 3] },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: { family: "'Inter', sans-serif", size: 10 },
+                        stepSize: 1,
+                        callback: function(value) {
+                            const idx = Math.round(value);
+                            if (idx >= 0 && idx < data.hwLabels.length) {
+                                const label = data.hwLabels[idx];
+                                return label.length > 25 ? label.substring(0, 25) + '...' : label;
+                            }
+                            return '';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Hardware (CPU + GPU)',
+                        color: '#9ca3af',
+                        font: { family: "'Inter', sans-serif", size: 12 }
+                    }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)', tickBorderDash: [3, 3] },
+                    ticks: {
+                        color: '#9ca3af',
+                        font: { family: "'Inter', sans-serif", size: 10 },
+                        callback: function(value) { return value.toLocaleString(); }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Main Score',
+                        color: '#9ca3af',
+                        font: { family: "'Inter', sans-serif", size: 12 }
+                    }
+                }
+            }
+        }
+    });
+}
+
 // Render Interactive Charts using Chart.js
 function renderCharts() {
     // 0. Overall Top 10 Main Scores Chart
@@ -2376,7 +2526,58 @@ function renderCharts() {
             );
         }
 
+        // OS vs Hardware Scatter Chart
+        const scatterData = getOSvsHardwareScatterData(benchmarkData);
+        if (document.getElementById('osHardwareScatterChart')) {
+            renderOSHardwareScatterChart('osHardwareScatterChart', scatterData);
+        }
+
     }
+}
+
+// OS vs Hardware Scatter Data Aggregation
+function getOSvsHardwareScatterData(data, maxHardware = 15, minSamples = 3) {
+    const groups = {};
+    data.forEach(r => {
+        const key = `${normalizeCPU(r.cpu)} + ${normalizeGPU(r.gpu)}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(r);
+    });
+
+    const sorted = Object.entries(groups)
+        .filter(([, runs]) => runs.length >= minSamples)
+        .sort((a, b) => b[1].length - a[1].length)
+        .slice(0, maxHardware);
+
+    const points = [];
+    sorted.forEach(([hwLabel, runs], hwIndex) => {
+        const osGroups = {};
+        runs.forEach(r => {
+            const score = cleanNumber(r.mainScore);
+            if (score === null) return;
+            const osKey = r.os || 'Other';
+            if (!osGroups[osKey]) osGroups[osKey] = [];
+            osGroups[osKey].push({ score, run: r });
+        });
+        Object.entries(osGroups).forEach(([osName, entries]) => {
+            const avgScore = Math.round(entries.reduce((s, e) => s + e.score, 0) / entries.length);
+            const bestRun = entries.reduce((best, e) => e.score > best.score ? e : best, entries[0]).run;
+            points.push({
+                x: hwIndex,
+                y: avgScore,
+                os: osName,
+                user: bestRun.user,
+                clientId: bestRun.clientId,
+                kernel: bestRun.kernel,
+                driver: bestRun.driver,
+                hardwareLabel: hwLabel,
+                count: entries.length
+            });
+        });
+    });
+
+    const hwLabels = sorted.map(([label]) => label);
+    return { points, hwLabels };
 }
 
 // Horizontal Bar Chart Renderer

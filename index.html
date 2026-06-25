@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="scroll-behavior: smooth;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,34 +19,60 @@
         <div class="infinite-grid"></div>
     </div>
     <div class="app-container">
-        <!-- Sidebar or Header -->
-        <header class="main-header">
-            <div class="header-content">
-                <div class="logo-area">
-                    <div class="logo-icon">
-                        <i data-lucide="box"></i>
+        <!-- Header Block (unified header + nav) -->
+        <div class="header-block">
+            <header class="main-header">
+                <div class="header-content">
+                    <div class="logo-area">
+                        <div class="logo-icon">
+                            <i data-lucide="box"></i>
+                        </div>
+                        <div>
+                            <h1>Pascube<span class="gradient-text">DB</span></h1>
+                            <p class="subtitle">The Community-Driven Linux Gaming Benchmark</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1>Pascube<span class="gradient-text">DB</span></h1>
-                        <p class="subtitle">The Community-Driven Linux Gaming Benchmark</p>
+                    <div class="header-actions">
+                        <button id="leaderboard-btn" class="btn btn-secondary">
+                            <i data-lucide="trophy"></i>
+                            <span>Leaderboard</span>
+                        </button>
+                        <button id="refresh-btn" class="btn btn-primary">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>Sync Data</span>
+                        </button>
                     </div>
                 </div>
-                <div class="header-actions">
-                    <button id="leaderboard-btn" class="btn btn-secondary">
-                        <i data-lucide="trophy"></i>
-                        <span>Leaderboard</span>
-                    </button>
-                    <button id="refresh-btn" class="btn btn-primary">
-                        <i data-lucide="refresh-cw"></i>
-                        <span>Sync Data</span>
-                    </button>
-                </div>
-            </div>
-        </header>
+            </header>
+
+            <!-- Sticky Section Navigation -->
+            <nav id="section-nav" class="section-nav">
+                <a href="#section-highest" class="nav-pill active" data-section="highest">
+                    <i data-lucide="crown"></i>
+                    <span>Highest</span>
+                </a>
+                <a href="#section-demographics" class="nav-pill" data-section="demographics">
+                    <i data-lucide="bar-chart-3"></i>
+                    <span>Demographics</span>
+                </a>
+                <a href="#section-advanced" class="nav-pill" data-section="advanced">
+                    <i data-lucide="trending-up"></i>
+                    <span>Advanced</span>
+                </a>
+                <a href="#section-portable" class="nav-pill" data-section="portable">
+                    <i data-lucide="tablet"></i>
+                    <span>Portable</span>
+                </a>
+                <a href="#section-community" class="nav-pill" data-section="community">
+                    <i data-lucide="users"></i>
+                    <span>Community</span>
+                </a>
+            </nav>
+        </div>
 
         <!-- Stats Grid -->
         <section class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card reveal">
                 <div class="stat-icon cpu-icon">
                     <i data-lucide="cpu"></i>
                 </div>
@@ -89,7 +115,7 @@
         </section>
 
         <!-- Main Charts Section -->
-        <section class="charts-section">
+        <section id="section-highest" class="charts-section">
             <div class="section-header">
                 <h2>Highest Scores</h2>
                 <p>Top benchmark runs across all hardware categories</p>
@@ -137,7 +163,7 @@
         </section>
 
         <!-- Demographics Section -->
-        <section class="demographics-section">
+        <section id="section-demographics" class="demographics-section">
             <div class="section-header">
                 <h2>System Demographics</h2>
                 <p>Hardware popularity and distribution statistics</p>
@@ -223,7 +249,7 @@
         </section>
 
         <!-- Advanced Metrics Section -->
-        <section class="advanced-charts-section">
+        <section id="section-advanced" class="advanced-charts-section">
             <div class="section-header">
                 <h2>Advanced Performance & Versions</h2>
                 <p>Average performance scores, run distribution density, and system software versions</p>
@@ -299,7 +325,7 @@
         </section>
 
         <!-- Portable Devices Section -->
-        <section class="mobile-charts-section">
+        <section id="section-portable" class="mobile-charts-section">
             <div class="section-header">
                 <h2>Portable Devices</h2>
                 <p>Performance and distribution metrics for notebooks, handheld gaming PCs, and SBCs</p>
@@ -442,7 +468,7 @@
         </section>
 
         <!-- PascubeDB Community Insights Section -->
-        <section class="community-insights-section">
+        <section id="section-community" class="community-insights-section">
             <div class="section-header">
                 <h2>PascubeDB Community Insights</h2>
                 <p>Overall database activity and community engagement stats</p>
@@ -616,6 +642,11 @@
             </div>
         </div>
     </dialog>
+
+    <!-- Back to Top -->
+    <button id="back-to-top" aria-label="Back to top">
+        <i data-lucide="arrow-up"></i>
+    </button>
 
     <!-- Main JavaScript Logic -->
     <script src="app.js"></script>

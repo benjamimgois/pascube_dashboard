@@ -121,6 +121,9 @@ let currentSort = { column: 'mainScore', direction: 'desc' };
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    initSkeletonLoading();
+    initScrollObservers();
+    initBackToTop();
     fetchData();
 });
 
@@ -682,14 +685,18 @@ function renderOverviewStats() {
         }
     });
     
-    document.getElementById('stat-top-cpu-single').textContent = topSingle.score || '-';
+    document.getElementById('stat-top-cpu-single').textContent = animateCounter('stat-top-cpu-single', topSingle.score || 0);
     document.getElementById('stat-top-cpu-single-sub').textContent = topSingle.hardware;
     
-    document.getElementById('stat-top-cpu-multi').textContent = topMulti.score ? topMulti.score.toLocaleString() : '-';
+    document.getElementById('stat-top-cpu-multi').textContent = animateCounter('stat-top-cpu-multi', topMulti.score || 0, true);
     document.getElementById('stat-top-cpu-multi-sub').textContent = topMulti.hardware;
     
-    document.getElementById('stat-top-gpu').textContent = topGpu.score ? topGpu.score.toLocaleString() : '-';
+    document.getElementById('stat-top-gpu').textContent = animateCounter('stat-top-gpu', topGpu.score || 0, true);
     document.getElementById('stat-top-gpu-sub').textContent = topGpu.hardware;
+
+    // Animate total runs counter
+    const totalRuns = benchmarkData.length;
+    document.getElementById('stat-total-runs').textContent = animateCounter('stat-total-runs', totalRuns, true);
 }
 
 // Sort data table columns
@@ -2382,7 +2389,7 @@ function renderCharts() {
                 uniqueClients.add(r.clientId);
             }
         });
-        document.getElementById('stat-unique-clients').textContent = uniqueClients.size.toLocaleString();
+        document.getElementById('stat-unique-clients').textContent = animateCounter('stat-unique-clients', uniqueClients.size, true);
 
         // 2. Hardware Models
         const uniqueCPUs = new Set();
@@ -2397,7 +2404,7 @@ function renderCharts() {
                 uniqueGPUs.add(gpuNorm);
             }
         });
-        document.getElementById('stat-unique-hardware').textContent = (uniqueCPUs.size + uniqueGPUs.size).toLocaleString();
+        document.getElementById('stat-unique-hardware').textContent = animateCounter('stat-unique-hardware', (uniqueCPUs.size + uniqueGPUs.size), true);
 
         // 3. Submissions in last 7 days
         const parsedDates = benchmarkData
@@ -2410,7 +2417,7 @@ function renderCharts() {
             const d = parseDate(r.dateTime);
             return d !== null && d >= sevenDaysAgo;
         }).length;
-        document.getElementById('stat-recent-submissions').textContent = last7DaysCount.toLocaleString();
+        document.getElementById('stat-recent-submissions').textContent = animateCounter('stat-recent-submissions', last7DaysCount, true);
 
         // 4. Daily Submissions Activity (Last 30 Days)
         const activityData = {};
@@ -2534,6 +2541,9 @@ function renderCharts() {
 
         // Update section insight analyses
         updateSectionInsights();
+
+        // Remove skeleton loaders after charts are rendered
+        removeSkeletonLoading();
 
     }
 }
@@ -3092,4 +3102,110 @@ function showError(message) {
         </tr>
     `;
     lucide.createIcons();
+}
+
+// Animated Counter — animates a stat value from 0 to target
+function animateCounter(elementId, targetValue, useLocaleFormat = false) {
+    const el = document.getElementById(elementId);
+    if (!el) return '';
+    if (targetValue === 0 || targetValue === null || targetValue === undefined) {
+        el.textContent = '-';
+        return '-';
+    }
+    const existing = el.dataset.counterTarget;
+    if (existing && Number(existing) === targetValue) return el.textContent;
+    el.dataset.counterTarget = targetValue;
+
+    const current = parseFloat(el.textContent?.replace(/[^0-9.]/g, '')) || 0;
+    if (current === targetValue) return el.textContent;
+
+    const duration = 1000;
+    const start = performance.now();
+
+    function step(now) {
+        const elapsed = now - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const val = Math.floor(current + (targetValue - current) * eased);
+        el.textContent = useLocaleFormat ? val.toLocaleString() : val;
+        if (progress < 1) {
+            requestAnimationFrame(step);
+        } else {
+            el.textContent = useLocaleFormat ? targetValue.toLocaleString() : targetValue;
+        }
+    }
+
+    requestAnimationFrame(step);
+    return useLocaleFormat ? targetValue.toLocaleString() : targetValue;
+}
+
+// Scroll Observers: nav active state + scroll reveal
+function initScrollObservers() {
+    const sectionIds = ['section-highest', 'section-demographics', 'section-advanced', 'section-portable', 'section-community'];
+
+    // Nav active state
+    const navPills = document.querySelectorAll('.nav-pill');
+    if (navPills.length > 0) {
+        const navObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const sectionName = entry.target.id.replace('section-', '');
+                    navPills.forEach(pill => {
+                        pill.classList.toggle('active', pill.dataset.section === sectionName);
+                    });
+                }
+            });
+        }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+
+        sectionIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) navObserver.observe(el);
+        });
+    }
+
+    // Scroll reveal
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('revealed');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.stat-card, .section-header, .chart-container-wrapper, .section-insight').forEach(el => {
+        el.classList.add('reveal');
+        revealObserver.observe(el);
+    });
+}
+
+// Back to Top button
+function initBackToTop() {
+    const btn = document.getElementById('back-to-top');
+    if (!btn) return;
+
+    window.addEventListener('scroll', () => {
+        btn.classList.toggle('visible', window.scrollY > 500);
+    }, { passive: true });
+
+    btn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
+
+// Skeleton Loading
+function initSkeletonLoading() {
+    document.querySelectorAll('.chart-canvas-area').forEach(area => {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'skeleton';
+        skeleton.style.position = 'absolute';
+        skeleton.style.inset = '0';
+        skeleton.style.zIndex = '1';
+        area.style.position = area.style.position || 'relative';
+        area.appendChild(skeleton);
+    });
+}
+
+function removeSkeletonLoading() {
+    document.querySelectorAll('.chart-canvas-area .skeleton').forEach(s => s.remove());
 }

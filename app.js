@@ -132,17 +132,17 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupTabNavigation() {
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
+    window.switchTab = (target) => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.style.display = 'none');
+        const activeTab = document.querySelector(`.tab-btn[data-tab="${target}"]`);
+        const activeContent = document.querySelector(`.tab-content[data-tab="${target}"]`);
+        if (activeTab) activeTab.classList.add('active');
+        if (activeContent) activeContent.style.display = 'block';
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+    };
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            const target = tab.getAttribute('data-tab');
-            tabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            contents.forEach(c => c.classList.remove('active'));
-            const activeContent = document.querySelector(`.tab-content[data-tab="${target}"]`);
-            if (activeContent) activeContent.classList.add('active');
-            // Force Chart.js to recalculate dimensions for newly visible charts
-            setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
-        });
+        tab.addEventListener('click', () => window.switchTab(tab.getAttribute('data-tab')));
     });
 }
 
@@ -2767,6 +2767,9 @@ function renderCharts() {
 
     // Update section insight analyses
     updateSectionInsights();
+
+    // Initial tab state: show hardware after all charts rendered
+    if (window.switchTab) window.switchTab('hardware');
 
 }
 

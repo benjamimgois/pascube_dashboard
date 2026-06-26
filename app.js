@@ -121,11 +121,28 @@ let currentSort = { column: 'mainScore', direction: 'desc' };
 // Initialize Application
 document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
+    setupTabNavigation();
     initSkeletonLoading();
     initScrollObservers();
     initBackToTop();
     fetchData();
 });
+
+// Tab Navigation — Hardware / Software
+function setupTabNavigation() {
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const target = tab.getAttribute('data-tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            contents.forEach(c => c.classList.remove('active'));
+            const activeContent = document.querySelector(`.tab-content[data-tab="${target}"]`);
+            if (activeContent) activeContent.classList.add('active');
+        });
+    });
+}
 
 // Setup Events (search, filter, sort, sync)
 function setupEventListeners() {

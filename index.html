@@ -45,36 +45,20 @@
                 </div>
             </header>
 
-            <!-- Sticky Section Navigation -->
-            <nav id="section-nav" class="section-nav">
-                <a href="#section-highest" class="nav-pill active" data-section="highest">
-                    <i data-lucide="crown"></i>
-                    <span>Highest</span>
-                </a>
-                <a href="#section-demographics" class="nav-pill" data-section="demographics">
-                    <i data-lucide="bar-chart-3"></i>
-                    <span>Demographics</span>
-                </a>
-            <a href="#section-advanced" class="nav-pill" data-section="advanced">
-                <i data-lucide="trending-up"></i>
-                <span>Advanced</span>
-            </a>
-            <a href="#section-software" class="nav-pill" data-section="software">
-                <i data-lucide="git-compare"></i>
-                <span>Software</span>
-            </a>
-            <a href="#section-portable" class="nav-pill" data-section="portable">
-                    <i data-lucide="tablet"></i>
-                    <span>Portable</span>
-                </a>
-                <a href="#section-community" class="nav-pill" data-section="community">
-                    <i data-lucide="users"></i>
-                    <span>Community</span>
-                </a>
+            <!-- Tab Navigation -->
+            <nav id="tab-nav" class="tab-nav">
+                <button class="tab-btn active" data-tab="hardware">
+                    <i data-lucide="cpu"></i>
+                    <span>Hardware Benchmark</span>
+                </button>
+                <button class="tab-btn" data-tab="software">
+                    <i data-lucide="git-compare"></i>
+                    <span>Software Benchmark</span>
+                </button>
             </nav>
         </div>
 
-        <!-- Stats Grid -->
+        <!-- Stats Grid (always visible) -->
         <section class="stats-grid">
             <div class="stat-card reveal">
                 <div class="stat-icon cpu-icon">
@@ -117,6 +101,9 @@
                 </div>
             </div>
         </section>
+
+        <!-- Hardware Benchmark Content -->
+        <div id="tab-hardware" class="tab-content active" data-tab="hardware">
 
         <!-- Main Charts Section -->
         <section id="section-highest" class="charts-section">
@@ -328,6 +315,9 @@
             <div class="section-insight" id="insight-advanced"></div>
         </section>
 
+        <!-- Software Benchmark Content -->
+        <div id="tab-software" class="tab-content" data-tab="software">
+
         <!-- Software Comparison Section -->
         <section id="section-software" class="software-comparison-section">
             <div class="section-header">
@@ -425,6 +415,18 @@
             </div>
             <div class="section-insight" id="insight-software"></div>
         </section>
+
+        <div class="chart-container-wrapper">
+            <div class="chart-header">
+                <h3>Package Distribution</h3>
+                <p>Native vs. Flatpak vs. AppImage benchmark submissions</p>
+            </div>
+            <div class="chart-canvas-area donut-chart-canvas">
+                <canvas id="packageDistChart"></canvas>
+            </div>
+        </div>
+
+        </div><!-- /tab-software -->
 
         <!-- Portable Devices Section -->
         <section id="section-portable" class="mobile-charts-section">
@@ -633,18 +635,10 @@
                     <canvas id="submissionActivityChart"></canvas>
                 </div>
             </div>
-
-            <div class="chart-container-wrapper">
-                <div class="chart-header">
-                    <h3>Package Distribution</h3>
-                    <p>Native vs. Flatpak vs. AppImage benchmark submissions</p>
-                </div>
-                <div class="chart-canvas-area donut-chart-canvas">
-                    <canvas id="packageDistChart"></canvas>
-                </div>
-            </div>
             <div class="section-insight" id="insight-community"></div>
         </section>
+
+        </div><!-- /tab-hardware -->
 
         <footer class="main-footer">
             <p>PascubeDB &copy; 2026. Data sourced in real-time from Google Sheets.</p>

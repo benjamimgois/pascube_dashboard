@@ -1617,10 +1617,12 @@ function getSoftwareWinner(data, type) {
         groups[hwKey][version].count++;
     });
 
-    // For each hardware group, determine winner
+    // For each hardware group with 2+ versions, determine winner
     const wins = {};
     const versionScores = {};
     Object.entries(groups).forEach(([hw, versions]) => {
+        const verList = Object.keys(versions);
+        if (verList.length < 2) return; // need at least 2 versions for a comparison
         let bestVersion = null;
         let bestAvg = 0;
         Object.entries(versions).forEach(([ver, vdata]) => {

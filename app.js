@@ -136,9 +136,9 @@ function setupTabNavigation() {
         tabs.forEach(t => t.classList.remove('active'));
         contents.forEach(c => c.style.display = 'none');
         const activeTab = document.querySelector(`.tab-btn[data-tab="${target}"]`);
-        const activeContent = document.querySelector(`.tab-content[data-tab="${target}"]`);
+        const activeContents = document.querySelectorAll(`.tab-content[data-tab="${target}"]`);
         if (activeTab) activeTab.classList.add('active');
-        if (activeContent) activeContent.style.display = 'block';
+        activeContents.forEach(c => c.style.display = 'block');
         setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
     };
     tabs.forEach(tab => {

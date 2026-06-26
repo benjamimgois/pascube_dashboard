@@ -63,6 +63,48 @@
 
         <!-- Stats Grid -->
         <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon cpu-icon">
+                    <i data-lucide="cpu"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Top CPU Single-Thread</span>
+                    <h3 id="stat-top-cpu-single" class="stat-value">-</h3>
+                    <p id="stat-top-cpu-single-sub" class="stat-sub">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon cpu-multi-icon">
+                    <i data-lucide="binary"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Top CPU Multi-Thread</span>
+                    <h3 id="stat-top-cpu-multi" class="stat-value">-</h3>
+                    <p id="stat-top-cpu-multi-sub" class="stat-sub">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon gpu-icon">
+                    <i data-lucide="zap"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Top GPU Score</span>
+                    <h3 id="stat-top-gpu" class="stat-value">-</h3>
+                    <p id="stat-top-gpu-sub" class="stat-sub">-</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon runs-icon">
+                    <i data-lucide="database"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">Total Benchmarks</span>
+                    <h3 id="stat-total-runs" class="stat-value">-</h3>
+                    <p class="stat-sub">Valid community runs</p>
+                </div>
+            </div>
+        </section>
+
         <section id="section-highest" class="charts-section">
             <div class="section-header">
                 <h2>Highest Scores</h2>

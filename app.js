@@ -2684,6 +2684,7 @@ function renderCharts() {
     }
 
     // Software Comparison Charts + Winners
+    try {
     function getWinnerFromScatterData(scatterData) {
         if (!scatterData || !scatterData.points || scatterData.points.length === 0) return null;
         const wins = {};
@@ -2761,6 +2762,10 @@ function renderCharts() {
         renderDriverScatterChart('kernelScatterChart', kernelData, 'Kernel', 'CPU Score');
     }
     renderWinnerCard(getWinnerFromScatterData(kernelData), 'kernel');
+
+    } catch(e) {
+        console.error('Software comparison charts error:', e);
+    }
 
     // Remove skeleton loaders after charts are rendered
     removeSkeletonLoading();

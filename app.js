@@ -2826,13 +2826,13 @@ function getDriverScatterData(data, driverType, maxHardware = 12, minSamples = 2
             if (gpuLower.includes('nvidia') || gpuLower.includes('rtx') || gpuLower.includes('geforce')) return;
             const d = r.driver || '';
             const match = d.match(/Mesa\s+(\d+\.\d+)(?:\.(\d+))?/i);
-            if (match) version = match[0].trim();
+            if (match) version = match[1];
         } else if (driverType === 'nvidia') {
             const gpuLower = (r.gpu || '').toLowerCase();
             if (!gpuLower.includes('nvidia') && !gpuLower.includes('rtx') && !gpuLower.includes('geforce')) return;
             const d = r.driver || '';
             if (d.includes('NVRM') || d.includes('NVIDIA')) {
-                const match = d.match(/(?:NVRM|NVIDIA).*?(\d+\.\d+\.\d+)/i);
+                const match = d.match(/(?:NVRM|NVIDIA).*?(\d+\.\d+)/i);
                 if (match) version = match[1];
             }
         }

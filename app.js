@@ -1559,12 +1559,14 @@ function getVersionDistribution(data, type) {
 
 // Get software winner comparison (OS, Mesa, NVIDIA, Kernel)
 function getSoftwareWinner(data, type) {
-    const totals = {};
-    const counts = {};
-
+    // Head-to-head: for each CPU model, which software wins (highest avg Main Score)?
+    const cpuGroups = {};
     data.forEach(r => {
-        let key = null;
+        const cpuKey = normalizeCPU(r.cpu);
+        const score = r.mainScore;
+        if (!cpuKey || score === null || isNaN(score)) return;
 
+        let version = null;
         if (type === 'os') {
             const os = r.os || 'N/D';
             let osClean = os.split(' ')[0];
@@ -1581,55 +1583,77 @@ function getSoftwareWinner(data, type) {
             else if (os.toLowerCase().includes('garuda')) osClean = 'Garuda';
             else if (os.toLowerCase().includes('manjaro')) osClean = 'Manjaro';
             else if (os.toLowerCase().includes('endeavouros')) osClean = 'EndeavourOS';
-            key = osClean;
+            version = osClean;
         } else if (type === 'mesa') {
             const d = r.driver || '';
             const match = d.match(/Mesa\s+(\d+\.\d+)(?:\.(\d+))?/i);
-            if (match) key = match[2] === '99' ? match[1] + ' (mesa-git)' : match[1];
+            if (match) version = match[2] === '99' ? match[1] + ' (mesa-git)' : match[1];
         } else if (type === 'nvidia') {
             const d = r.driver || '';
             if (d.includes('NVRM') || d.includes('NVIDIA')) {
                 const match = d.match(/NVRM version:.*?(\d+\.\d+)/i);
-                if (match) key = match[1];
+                if (match) version = match[1];
             }
         } else if (type === 'kernel') {
             const k = r.kernel || '';
             const match = k.match(/^(\d+\.\d+)/);
-            if (match) key = match[1];
+            if (match) version = match[1];
         }
 
-        const score = r.mainScore;
-        if (key && score !== null && !isNaN(score)) {
-            totals[key] = (totals[key] || 0) + score;
-            counts[key] = (counts[key] || 0) + 1;
+        if (!version) return;
+
+        if (!cpuGroups[cpuKey]) cpuGroups[cpuKey] = {};
+        if (!cpuGroups[cpuKey][version]) cpuGroups[cpuKey][version] = { total: 0, count: 0 };
+        cpuGroups[cpuKey][version].total += score;
+        cpuGroups[cpuKey][version].count++;
+    });
+
+    // For each CPU, determine winner
+    const wins = {};
+    const versionScores = {};
+    Object.entries(cpuGroups).forEach(([cpu, versions]) => {
+        let bestVersion = null;
+        let bestAvg = 0;
+        Object.entries(versions).forEach(([ver, data]) => {
+            const avg = data.total / data.count;
+            if (!versionScores[ver]) versionScores[ver] = { total: 0, count: 0 };
+            versionScores[ver].total += data.total;
+            versionScores[ver].count += data.count;
+            if (avg > bestAvg && data.count >= 1) {
+                bestAvg = avg;
+                bestVersion = ver;
+            }
+        });
+        if (bestVersion) {
+            wins[bestVersion] = (wins[bestVersion] || 0) + 1;
         }
     });
 
-    const entries = Object.entries(totals)
-        .map(([name, total]) => ({ name, avg: Math.round(total / counts[name]), count: counts[name] }))
-        .filter(e => e.count >= 3)
-        .sort((a, b) => b.avg - a.avg);
+    // Calculate average Main Score per version (across all hardware)
+    const versionAvgs = {};
+    Object.entries(versionScores).forEach(([ver, data]) => {
+        versionAvgs[ver] = Math.round(data.total / data.count);
+    });
+
+    const entries = Object.entries(wins)
+        .map(([name, count]) => ({ name, wins: count, avg: versionAvgs[name] || 0, runCount: versionScores[name].count }))
+        .sort((a, b) => b.wins - a.wins);
 
     if (entries.length === 0) return null;
 
     const winner = entries[0];
-    const secondAvg = entries.length > 1 ? entries[1].avg : 0;
-    const thirdAvg = entries.length > 2 ? entries[2].avg : 0;
-
-    const vsSecond = secondAvg > 0
-        ? Math.round(((winner.avg - secondAvg) / secondAvg) * 100)
-        : 0;
-    const vsThird = thirdAvg > 0
-        ? Math.round(((winner.avg - thirdAvg) / thirdAvg) * 100)
-        : 0;
+    const second = entries.length > 1 ? entries[1] : null;
+    const third = entries.length > 2 ? entries[2] : null;
 
     return {
         winner: winner.name,
         winnerAvg: winner.avg,
-        vsSecond: vsSecond,
-        vsThird: vsThird,
-        secondName: entries.length > 1 ? entries[1].name : null,
-        thirdName: entries.length > 2 ? entries[2].name : null,
+        winnerWins: winner.wins,
+        winnerRuns: winner.runCount,
+        secondName: second ? second.name : null,
+        vsSecond: second ? Math.round(((winner.wins - second.wins) / second.wins) * 100) : 0,
+        thirdName: third ? third.name : null,
+        vsThird: third ? Math.round(((winner.wins - third.wins) / third.wins) * 100) : 0,
         totalGroups: entries.length
     };
 }
@@ -2364,14 +2388,13 @@ function renderCharts() {
         if (!nameEl || !statEl) return;
         if (result) {
             nameEl.textContent = result.winner;
-            let statText = `Avg Score: ${result.winnerAvg.toLocaleString()}`;
+            let statText = `${result.winnerWins} wins on ${result.winnerAvg.toLocaleString()} avg score`;
             if (result.secondName) {
                 statText += ` | +${result.vsSecond}% vs ${result.secondName}`;
             }
             if (result.thirdName) {
                 statText += ` | +${result.vsThird}% vs ${result.thirdName}`;
             }
-            statText += ` | ${result.totalGroups} groups`;
             statEl.textContent = statText;
         } else {
             nameEl.textContent = 'Insufficient data';

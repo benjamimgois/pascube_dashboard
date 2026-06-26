@@ -642,14 +642,28 @@
                 <p>Overall database activity and community engagement stats</p>
             </div>
             
-            <!-- Activity Chart Card -->
-            <div class="chart-container-wrapper">
-                <div class="chart-header">
-                    <h3>Daily Submissions (Last 30 Days)</h3>
-                    <p>Daily submission volume timeline</p>
+            <!-- Community Charts Grid -->
+            <div class="community-charts-grid">
+                <!-- Activity Chart Card -->
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Daily Submissions (Last 30 Days)</h3>
+                        <p>Daily submission volume timeline</p>
+                    </div>
+                    <div class="chart-canvas-area" style="height: 320px;">
+                        <canvas id="submissionActivityChart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-canvas-area" style="height: 320px;">
-                    <canvas id="submissionActivityChart"></canvas>
+
+                <!-- Top Contributors Chart Card -->
+                <div class="chart-container-wrapper">
+                    <div class="chart-header">
+                        <h3>Top Contributors</h3>
+                        <p>Client IDs with most benchmark submissions</p>
+                    </div>
+                    <div class="chart-canvas-area" style="height: 320px;">
+                        <canvas id="topContributorsChart"></canvas>
+                    </div>
                 </div>
             </div>
             <div class="section-insight" id="insight-community"></div>

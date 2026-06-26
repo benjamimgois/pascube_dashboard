@@ -1714,6 +1714,25 @@ function getPackageDistribution(data) {
     return sorted;
 }
 
+// Helper to get top contributors by number of benchmark submissions
+function getTopContributors(data, limit = 10) {
+    const counts = {};
+    data.forEach(r => {
+        const id = r.clientId || 'N/D';
+        if (id === 'N/D' || id === '') return;
+        counts[id] = (counts[id] || 0) + 1;
+    });
+    const entries = Object.entries(counts)
+        .map(([clientId, submissions]) => ({ clientId, submissions }))
+        .sort((a, b) => b.submissions - a.submissions)
+        .slice(0, limit);
+    return {
+        labels: entries.map(e => e.clientId.length > 8 ? e.clientId.substring(0, 8) : e.clientId),
+        counts: entries.map(e => e.submissions),
+        clientIds: entries.map(e => e.clientId)
+    };
+}
+
 // Helper to calculate score histogram bins
 function getScoreHistogramData(data) {
     const bins = {
@@ -2678,6 +2697,24 @@ function renderCharts() {
                 Object.values(pkgDist),
                 pkgColors.map(c => c.bg),
                 pkgColors.map(c => c.border)
+            );
+        }
+
+        // Top Contributors Chart
+        const contributors = getTopContributors(benchmarkData, 10);
+        if (document.getElementById('topContributorsChart') && contributors.labels.length > 0) {
+            renderHorizontalBarChart(
+                'topContributorsChart',
+                contributors.labels,
+                contributors.counts,
+                'Submissions',
+                'rgba(99, 102, 241, 0.8)',
+                '#818cf8',
+                null,
+                0,
+                contributors.clientIds,
+                null,
+                null
             );
         }
 

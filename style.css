@@ -1032,6 +1032,18 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.85rem; font-weight: 80
     margin-bottom: 0.5rem;
 }
 
+.community-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .community-charts-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 .stat-icon-box {
     width: 52px;
     height: 52px;

@@ -1733,6 +1733,23 @@ function getTopContributors(data, limit = 10) {
     };
 }
 
+// Helper to deduplicate runs by client-id, keeping only the most recent run per client
+function getUniqueClientRuns(data) {
+    const latestByClient = {};
+    data.forEach(r => {
+        const id = r.clientId || 'N/D';
+        if (id === 'N/D' || id === '') return;
+        const date = parseDate(r.dateTime);
+        const current = latestByClient[id];
+        if (!current) {
+            latestByClient[id] = { run: r, date };
+        } else if (date !== null && (current.date === null || date > current.date)) {
+            latestByClient[id] = { run: r, date };
+        }
+    });
+    return Object.values(latestByClient).map(entry => entry.run);
+}
+
 // Helper to calculate score histogram bins
 function getScoreHistogramData(data) {
     const bins = {
@@ -2189,7 +2206,7 @@ function renderCharts() {
     );
 
     // 6. Pie/Doughnut OS Distribution Chart
-    const osDist = getOSDistribution(benchmarkData);
+    const osDist = getOSDistribution(getUniqueClientRuns(benchmarkData));
     const osLabels = Object.keys(osDist);
     
     const osPalette = [
@@ -2230,7 +2247,7 @@ function renderCharts() {
     );
 
     // 7. Pie/Doughnut CPU Brand Distribution Chart
-    const cpuBrandDist = getCPUBrandDistribution(benchmarkData);
+    const cpuBrandDist = getCPUBrandDistribution(getUniqueClientRuns(benchmarkData));
     if (cpuBrandDist.Other === 0) {
         delete cpuBrandDist.Other;
     }
@@ -2250,7 +2267,7 @@ function renderCharts() {
     );
 
     // 8. Pie/Doughnut GPU Brand Distribution Chart
-    const gpuBrandDist = getGPUBrandDistribution(benchmarkData);
+    const gpuBrandDist = getGPUBrandDistribution(getUniqueClientRuns(benchmarkData));
     if (gpuBrandDist.Other === 0) {
         delete gpuBrandDist.Other;
     }
@@ -2375,7 +2392,7 @@ function renderCharts() {
     */
 
     // 14. Mesa version distribution
-    const mesaVersions = getVersionDistribution(benchmarkData, 'mesa');
+    const mesaVersions = getVersionDistribution(getUniqueClientRuns(benchmarkData), 'mesa');
     renderDoughnutChart(
         'mesaVersionChart',
         Object.keys(mesaVersions),
@@ -2397,7 +2414,7 @@ function renderCharts() {
     );
 
     // 15. Kernel version distribution
-    const kernelVersions = getVersionDistribution(benchmarkData, 'kernel');
+    const kernelVersions = getVersionDistribution(getUniqueClientRuns(benchmarkData), 'kernel');
     renderDoughnutChart(
         'kernelVersionChart',
         Object.keys(kernelVersions),
@@ -2419,7 +2436,7 @@ function renderCharts() {
     );
 
     // 15b. NVIDIA Driver version distribution
-    const nvidiaVersions = getVersionDistribution(benchmarkData, 'nvidia');
+    const nvidiaVersions = getVersionDistribution(getUniqueClientRuns(benchmarkData), 'nvidia');
     renderDoughnutChart(
         'nvidiaVersionChart',
         Object.keys(nvidiaVersions),
@@ -2682,7 +2699,7 @@ function renderCharts() {
         }
 
         // Package Distribution
-        const pkgDist = getPackageDistribution(benchmarkData);
+        const pkgDist = getPackageDistribution(getUniqueClientRuns(benchmarkData));
         const pkgLabels = Object.keys(pkgDist);
         const pkgColors = pkgLabels.map(label => {
             if (label === 'native') return { bg: 'rgba(99, 102, 241, 0.8)', border: '#818cf8' };

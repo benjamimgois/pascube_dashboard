@@ -1559,15 +1559,18 @@ function getVersionDistribution(data, type) {
 
 // Get software winner comparison (OS, Mesa, NVIDIA, Kernel)
 function getSoftwareWinner(data, type) {
-    // Head-to-head: for each CPU model, which software wins (highest avg Main Score)?
-    const cpuGroups = {};
-    data.forEach(r => {
-        const cpuKey = normalizeCPU(r.cpu);
-        const score = r.mainScore;
-        if (!cpuKey || score === null || isNaN(score)) return;
+    // Group by hardware and determine which software version wins most often
+    // os: group by CPU, compare Main Score
+    // mesa: group by GPU, compare GPU Score
+    // nvidia: group by GPU, compare GPU Score
+    // kernel: group by CPU, compare CPU Single
+    const groups = {};
 
-        let version = null;
+    data.forEach(r => {
+        let hwKey, score, version;
         if (type === 'os') {
+            hwKey = normalizeCPU(r.cpu);
+            score = r.mainScore;
             const os = r.os || 'N/D';
             let osClean = os.split(' ')[0];
             if (os.toLowerCase().includes('arch')) osClean = 'Arch Linux';
@@ -1585,41 +1588,47 @@ function getSoftwareWinner(data, type) {
             else if (os.toLowerCase().includes('endeavouros')) osClean = 'EndeavourOS';
             version = osClean;
         } else if (type === 'mesa') {
+            hwKey = normalizeGPU(r.gpu);
+            score = r.gpuScore;
             const d = r.driver || '';
             const match = d.match(/Mesa\s+(\d+\.\d+)(?:\.(\d+))?/i);
             if (match) version = match[2] === '99' ? match[1] + ' (mesa-git)' : match[1];
         } else if (type === 'nvidia') {
+            hwKey = normalizeGPU(r.gpu);
+            score = r.gpuScore;
             const d = r.driver || '';
             if (d.includes('NVRM') || d.includes('NVIDIA')) {
                 const match = d.match(/NVRM version:.*?(\d+\.\d+)/i);
                 if (match) version = match[1];
             }
         } else if (type === 'kernel') {
+            hwKey = normalizeCPU(r.cpu);
+            score = r.cpuSingle;
             const k = r.kernel || '';
             const match = k.match(/^(\d+\.\d+)/);
             if (match) version = match[1];
         }
 
-        if (!version) return;
+        if (!hwKey || !version || score === null || isNaN(score)) return;
 
-        if (!cpuGroups[cpuKey]) cpuGroups[cpuKey] = {};
-        if (!cpuGroups[cpuKey][version]) cpuGroups[cpuKey][version] = { total: 0, count: 0 };
-        cpuGroups[cpuKey][version].total += score;
-        cpuGroups[cpuKey][version].count++;
+        if (!groups[hwKey]) groups[hwKey] = {};
+        if (!groups[hwKey][version]) groups[hwKey][version] = { total: 0, count: 0 };
+        groups[hwKey][version].total += score;
+        groups[hwKey][version].count++;
     });
 
-    // For each CPU, determine winner
+    // For each hardware group, determine winner
     const wins = {};
     const versionScores = {};
-    Object.entries(cpuGroups).forEach(([cpu, versions]) => {
+    Object.entries(groups).forEach(([hw, versions]) => {
         let bestVersion = null;
         let bestAvg = 0;
-        Object.entries(versions).forEach(([ver, data]) => {
-            const avg = data.total / data.count;
+        Object.entries(versions).forEach(([ver, vdata]) => {
+            const avg = vdata.total / vdata.count;
             if (!versionScores[ver]) versionScores[ver] = { total: 0, count: 0 };
-            versionScores[ver].total += data.total;
-            versionScores[ver].count += data.count;
-            if (avg > bestAvg && data.count >= 1) {
+            versionScores[ver].total += vdata.total;
+            versionScores[ver].count += vdata.count;
+            if (avg > bestAvg) {
                 bestAvg = avg;
                 bestVersion = ver;
             }
@@ -1629,10 +1638,10 @@ function getSoftwareWinner(data, type) {
         }
     });
 
-    // Calculate average Main Score per version (across all hardware)
+    // Calculate average score per version
     const versionAvgs = {};
-    Object.entries(versionScores).forEach(([ver, data]) => {
-        versionAvgs[ver] = Math.round(data.total / data.count);
+    Object.entries(versionScores).forEach(([ver, vdata]) => {
+        versionAvgs[ver] = Math.round(vdata.total / vdata.count);
     });
 
     const entries = Object.entries(wins)
@@ -1651,9 +1660,9 @@ function getSoftwareWinner(data, type) {
         winnerWins: winner.wins,
         winnerRuns: winner.runCount,
         secondName: second ? second.name : null,
-        vsSecond: second ? Math.round(((winner.wins - second.wins) / second.wins) * 100) : 0,
+        vsSecond: second ? Math.round(((winner.wins - second.wins) / Math.max(second.wins, 0.1)) * 100) : 0,
         thirdName: third ? third.name : null,
-        vsThird: third ? Math.round(((winner.wins - third.wins) / third.wins) * 100) : 0,
+        vsThird: third ? Math.round(((winner.wins - third.wins) / Math.max(third.wins, 0.1)) * 100) : 0,
         totalGroups: entries.length
     };
 }

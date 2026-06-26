@@ -2671,16 +2671,20 @@ function renderCharts() {
         const totals = {};
         const hwSet = new Set();
         scatterData.points.forEach(p => {
+            const label = p.label || p.os || '';
             hwSet.add(p.hardwareLabel);
-            if (!totals[p.label]) totals[p.label] = { total: 0, count: 0 };
-            totals[p.label].total += p.y * (p.count || 1);
-            totals[p.label].count += (p.count || 1);
+            if (!totals[label]) totals[label] = { total: 0, count: 0 };
+            totals[label].total += p.y * (p.count || 1);
+            totals[label].count += (p.count || 1);
         });
         const hwLabels = [...hwSet];
         hwLabels.forEach(hw => {
             const hwPoints = scatterData.points.filter(p => p.hardwareLabel === hw);
             let bestLabel = null, bestY = 0;
-            hwPoints.forEach(p => { if (p.y > bestY) { bestY = p.y; bestLabel = p.label; } });
+            hwPoints.forEach(p => {
+                const label = p.label || p.os || '';
+                if (p.y > bestY) { bestY = p.y; bestLabel = label; }
+            });
             if (bestLabel) wins[bestLabel] = (wins[bestLabel] || 0) + 1;
         });
         const entries = Object.entries(wins)

@@ -683,7 +683,6 @@ function handleFilterChange() {
 
 // Render Overview Statistics
 function renderOverviewStats() {
-    document.getElementById('stat-total-runs').textContent = benchmarkData.length;
     
     // Find absolute highest scores
     let topSingle = { score: 0, hardware: '-' };
@@ -714,9 +713,17 @@ function renderOverviewStats() {
     document.getElementById('stat-top-gpu').textContent = animateCounter('stat-top-gpu', topGpu.score || 0, true);
     document.getElementById('stat-top-gpu-sub').textContent = topGpu.hardware;
 
-    // Animate total runs counter
-    const totalRuns = benchmarkData.length;
-    document.getElementById('stat-total-runs').textContent = animateCounter('stat-total-runs', totalRuns, true);
+    // Most Humble: lowest valid mainScore
+    let humbleScore = Infinity;
+    let humbleHardware = '-';
+    benchmarkData.forEach(row => {
+        if (humbleScore > 1 && row.mainScore && row.mainScore > 0 && row.mainScore < humbleScore) {
+            humbleScore = row.mainScore;
+            humbleHardware = normalizeCPU(row.cpu) + ' + ' + normalizeGPU(row.gpu);
+        }
+    });
+    document.getElementById('stat-most-humble-score').textContent = animateCounter('stat-most-humble-score', humbleScore < Infinity ? humbleScore : 0);
+    document.getElementById('stat-most-humble-hardware').textContent = humbleScore < Infinity ? humbleHardware : 'No data';
 }
 
 // Sort data table columns

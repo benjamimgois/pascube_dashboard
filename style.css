@@ -287,6 +287,9 @@ h1, h2, h3, h4 {
 .runs-icon { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); }
 .runs-icon i { color: #34d399; }
 
+.humble-icon { background: rgba(236, 72, 153, 0.15); border: 1px solid rgba(236, 72, 153, 0.3); width: 52px; height: 52px; flex-shrink: 0; }
+.humble-icon i { color: #f472b6; }
+
 .stat-info {
     display: flex;
     flex-direction: column;

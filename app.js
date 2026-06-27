@@ -1395,7 +1395,7 @@ function getCPUBrandDistribution(data) {
 
 // Helper to get GPU Brand distribution
 function getGPUBrandDistribution(data) {
-    const brands = { NVIDIA: 0, AMD: 0, Intel: 0, ARM: 0, Other: 0 };
+    const brands = { NVIDIA: 0, AMD: 0, Intel: 0, ARM: 0, llvmpipe: 0, Other: 0 };
     data.forEach(r => {
         const gpu = (r.gpu || '').toLowerCase();
         const arch = (r.architecture || '').toLowerCase();
@@ -1409,6 +1409,8 @@ function getGPUBrandDistribution(data) {
             brands.AMD++;
         } else if (gpu.includes('intel') || gpu.includes('arc') || gpu.includes('uhd') || gpu.includes('hd graphics')) {
             brands.Intel++;
+        } else if (gpu.includes('llvmpipe')) {
+            brands.llvmpipe++;
         } else {
             brands.Other++;
         }
@@ -2279,11 +2281,15 @@ function renderCharts() {
     if (gpuBrandDist.Other === 0) {
         delete gpuBrandDist.Other;
     }
+    if (gpuBrandDist.llvmpipe === 0) {
+        delete gpuBrandDist.llvmpipe;
+    }
     const gpuBrandColors = {
         'NVIDIA': { bg: 'rgba(16, 185, 129, 0.8)', border: '#34d399' },
         'AMD': { bg: 'rgba(244, 63, 94, 0.8)', border: '#fb7185' },
         'Intel': { bg: 'rgba(14, 165, 233, 0.8)', border: '#38bdf8' },
         'ARM': { bg: 'rgba(245, 158, 11, 0.8)', border: '#fbbf24' },
+        'llvmpipe': { bg: 'rgba(236, 72, 153, 0.8)', border: '#f472b6' },
         'Other': { bg: 'rgba(156, 163, 175, 0.8)', border: '#9ca3af' }
     };
     const gpuLabels = Object.keys(gpuBrandDist);

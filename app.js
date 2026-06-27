@@ -2576,6 +2576,8 @@ function renderCharts() {
         });
         document.getElementById('stat-unique-clients').textContent = animateCounter('stat-unique-clients', uniqueClients.size, true);
 
+        document.getElementById('stat-total-benchmarks').textContent = animateCounter('stat-total-benchmarks', benchmarkData.length, true);
+
         // 2. Hardware Models
         const uniqueCPUs = new Set();
         const uniqueGPUs = new Set();

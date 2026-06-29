@@ -243,6 +243,7 @@ h1, h2, h3, h4 {
     gap: 1.25rem;
     box-shadow: var(--shadow-md);
     transition: var(--transition-normal);
+    position: relative;
 }
 
 .stat-card:hover {
@@ -329,6 +330,51 @@ h1, h2, h3, h4 {
     font-size: 0.7rem;
     color: var(--text-secondary);
     margin-top: 0.15rem;
+}
+
+/* Winner Info Tooltip */
+.winner-info-trigger {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    cursor: help;
+    transition: color var(--transition-fast);
+    z-index: 5;
+}
+
+.winner-info-trigger:hover {
+    color: var(--primary);
+}
+
+.winner-info-tooltip {
+    position: absolute;
+    top: 34px;
+    right: 8px;
+    max-width: 260px;
+    background: rgba(15, 23, 42, 0.97);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.7rem;
+    line-height: 1.55;
+    color: #e2e8f0;
+    z-index: 100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.winner-info-trigger:hover + .winner-info-tooltip,
+.winner-info-tooltip:hover {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* Charts Section */
@@ -1356,6 +1402,13 @@ tr:nth-child(3) .rank-cell { color: #b45309; font-size: 0.85rem; font-weight: 80
     }
     .modal-table-card {
         height: calc(90vh - 230px);
+    }
+
+    .winner-info-tooltip {
+        max-width: 200px;
+        right: auto;
+        left: 0;
+        top: 32px;
     }
 }
 

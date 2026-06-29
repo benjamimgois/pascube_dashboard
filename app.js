@@ -282,8 +282,7 @@ function processGvizData(jsonResponse) {
         
         let gpuVal = getVal(3) || 'Unknown GPU';
         if (gpuVal.trim() === 'Graphics') {
-            const isAmdMobile = /ryzen.*?\b\d{4}(h|hs|u|hx)\b/i.test(cpuVal);
-            gpuVal = isAmdMobile ? 'RX Vega' : 'Radeon Graphics';
+            gpuVal = 'Radeon Graphics';
         } else if (gpuVal.trim() === 'AMD Custom GPU 0405') {
             gpuVal = 'Steam Deck';
         } else if (/intel.*?\barc.*?\b([ab]\d{3})\b/i.test(gpuVal)) {
@@ -292,7 +291,7 @@ function processGvizData(jsonResponse) {
         }
         
         if (gpuVal.trim() === 'Radeon RX Vega' || gpuVal.trim() === 'Vega 8 Graphics') {
-            gpuVal = 'RX Vega';
+            gpuVal = 'AMD Vega';
         } else if (gpuVal.trim() === 'RX 580') {
             gpuVal = 'RX 580 Series';
         }
@@ -442,8 +441,7 @@ function processCSVData(csvText) {
         
         let gpuVal = row[3] || 'Unknown GPU';
         if (gpuVal.trim() === 'Graphics') {
-            const isAmdMobile = /ryzen.*?\b\d{4}(h|hs|u|hx)\b/i.test(cpuVal);
-            gpuVal = isAmdMobile ? 'RX Vega' : 'Radeon Graphics';
+            gpuVal = 'Radeon Graphics';
         } else if (gpuVal.trim() === 'AMD Custom GPU 0405') {
             gpuVal = 'Steam Deck';
         } else if (/intel.*?\barc.*?\b([ab]\d{3})\b/i.test(gpuVal)) {
@@ -452,7 +450,7 @@ function processCSVData(csvText) {
         }
         
         if (gpuVal.trim() === 'Radeon RX Vega' || gpuVal.trim() === 'Vega 8 Graphics') {
-            gpuVal = 'RX Vega';
+            gpuVal = 'AMD Vega';
         } else if (gpuVal.trim() === 'RX 580') {
             gpuVal = 'RX 580 Series';
         }
@@ -984,12 +982,13 @@ function normalizeCPU(name) {
 // Helper to normalize GPU names for popularity chart
 function normalizeGPU(name) {
     if (!name) return 'Unknown GPU';
+    if (/^(AMD\s*)?Radeon\s*Graphics|^Graphics$/i.test(name.trim())) return 'AMD Vega';
     let clean = name.replace(/^(AMD|Intel|NVIDIA|Radeon|Intel\(R\))\s+/i, '');
-    clean = clean.replace(/\s+Graphics.*/i, ''); // strip " Graphics"
+    clean = clean.replace(/(?:^\s*|\s+)Graphics.*/i, ''); // strip " Graphics"
     clean = clean.replace(/\(tm\)/gi, '');
     clean = clean.replace(/\(R\)/gi, '');
     clean = clean.trim();
-    if (/^Vega\s*\d|^Radeon.*Vega|^RX\s*Vega/i.test(clean)) return 'AMD Vega';
+    if (/^AMD\s*Vega|^Vega\s*\d|^Vega$|^Radeon.*Vega|^RX\s*Vega/i.test(clean)) return 'AMD Vega';
     return clean;
 }
 
@@ -2848,19 +2847,29 @@ function renderCharts() {
 
         const versionStats = {};
         let totalCompared = 0;
+        const K = 5;
         Object.entries(groups).forEach(([hw, versions]) => {
             const verList = Object.keys(versions);
             if (verList.length < 2) return;
             totalCompared++;
+            // per-hardware pooled mean for shrinkage estimator
+            const verEntries = Object.entries(versions);
+            const hwTotalRuns = verEntries.reduce((s, [, d]) => s + d.count, 0);
+            const hwPooledMean = hwTotalRuns > 0
+                ? verEntries.reduce((s, [ver, d]) => s + (ver !== 'N/D' ? d.total : 0), 0) / hwTotalRuns
+                : 0;
             let bestVersion = null;
-            let bestAvg = -Infinity;
-            Object.entries(versions).forEach(([ver, vdata]) => {
+            let bestAdjusted = -Infinity;
+            verEntries.forEach(([ver, vdata]) => {
                 if (!versionStats[ver]) versionStats[ver] = { wins: 0, total: 0, count: 0 };
                 versionStats[ver].total += vdata.total;
                 versionStats[ver].count += vdata.count;
-                const avg = vdata.total / vdata.count;
-                if (avg > bestAvg) {
-                    bestAvg = avg;
+                const rawMean = vdata.total / vdata.count;
+                const n = vdata.count;
+                const shrinkage = K / (K + n);
+                const adjusted = rawMean * (1 - shrinkage) + hwPooledMean * shrinkage;
+                if (adjusted > bestAdjusted) {
+                    bestAdjusted = adjusted;
                     bestVersion = ver;
                 }
             });
@@ -2968,9 +2977,14 @@ function renderHardwareComparisonBars(canvasId, scatterData) {
             if (pts.length === 0) return 0;
             return Math.round(pts.reduce((s, p) => s + p.y * (p.count || 1), 0) / pts.reduce((s, p) => s + (p.count || 1), 0));
         });
+        const sampleCounts = labels.map(hw => {
+            const pts = scatterData.points.filter(p => p.hardwareLabel === hw && (p.label || p.os || '') === ver);
+            return pts.reduce((s, p) => s + (p.count || 1), 0);
+        });
         return {
             label: ver,
             data: data,
+            sampleCounts: sampleCounts,
             backgroundColor: palettes[idx % palettes.length],
             borderColor: borders[idx % borders.length],
             borderWidth: 1.5,
@@ -2997,7 +3011,13 @@ function renderHardwareComparisonBars(canvasId, scatterData) {
                 legend: { display: true, position: 'top', labels: { color: '#f3f4f6', font: { family: "'Inter', sans-serif", size: 10 }, boxWidth: 10, padding: 8, usePointStyle: true } },
                 tooltip: {
                     backgroundColor: 'rgba(15, 23, 42, 0.95)', titleFont: { family: "'Outfit', sans-serif", size: 12 }, bodyFont: { family: "'Inter', sans-serif", size: 12 },
-                    padding: 10, borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, cornerRadius: 8, displayColors: true
+                    padding: 10, borderColor: 'rgba(255, 255, 255, 0.15)', borderWidth: 1, cornerRadius: 8, displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const samples = context.dataset.sampleCounts ? context.dataset.sampleCounts[context.dataIndex] : 0;
+                            return [`${context.dataset.label}: ${context.parsed.x.toLocaleString()}`, `Samples: ${samples || 0}`];
+                        }
+                    }
                 }
             }
         }

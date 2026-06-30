@@ -2138,6 +2138,18 @@ function renderOSHardwareScatterChart(canvasId, data) {
     });
 }
 
+// Dedupe by client-id, keeping the highest score per contributor
+function dedupeBestPerClient(entries, scoreField) {
+    const best = {};
+    entries.forEach(r => {
+        const id = r.clientId || 'unknown';
+        if (!best[id] || r[scoreField] > best[id][scoreField]) {
+            best[id] = r;
+        }
+    });
+    return Object.values(best).sort((a, b) => b[scoreField] - a[scoreField]);
+}
+
 // Render Interactive Charts using Chart.js
 function renderCharts() {
     // 0. Overall Top 10 Main Scores Chart
@@ -2164,11 +2176,11 @@ function renderCharts() {
         mainRuns.map(r => r.gpu)
     );
 
-    // 1. CPU Single Thread Top 10 Chart
-    const cpuSingleRuns = benchmarkData
-        .filter(r => r.cpuSingle !== null)
-        .sort((a, b) => b.cpuSingle - a.cpuSingle)
-        .slice(0, 10);
+    // 1. CPU Single Thread Top 10 Chart (best per client)
+    const cpuSingleRuns = dedupeBestPerClient(
+        benchmarkData.filter(r => r.cpuSingle !== null),
+        'cpuSingle'
+    ).slice(0, 10);
     
     const cpuSingleScores = cpuSingleRuns.map(r => r.cpuSingle);
     const cpuSingleMin = cpuSingleScores.length > 0 ? Math.min(...cpuSingleScores) : 0;
@@ -2186,29 +2198,33 @@ function renderCharts() {
         cpuSingleRuns.map(r => getDisplayName(r))
     );
     
-    // 2. CPU Multi Thread Top 10 Chart
-    const cpuMultiRuns = benchmarkData
-        .filter(r => r.cpuMulti !== null)
-        .sort((a, b) => b.cpuMulti - a.cpuMulti)
-        .slice(0, 10);
+    // 2. CPU Multi Thread Top 10 Chart (best per client)
+    const cpuMultiRuns = dedupeBestPerClient(
+        benchmarkData.filter(r => r.cpuMulti !== null),
+        'cpuMulti'
+    ).slice(0, 10);
         
+    const cpuMultiScores = cpuMultiRuns.map(r => r.cpuMulti);
+    const cpuMultiMin = cpuMultiScores.length > 0 ? Math.min(...cpuMultiScores) : 0;
+    const cpuMultiXMin = Math.floor(cpuMultiMin * 0.9);
+    
     renderHorizontalBarChart(
         'cpuMultiChart',
         cpuMultiRuns.map(r => r.cpu),
-        cpuMultiRuns.map(r => r.cpuMulti),
+        cpuMultiScores,
         'CPU Multi Score',
         'rgba(168, 85, 247, 0.85)',
         '#c084fc',
         undefined,
-        undefined,
+        cpuMultiXMin,
         cpuMultiRuns.map(r => getDisplayName(r))
     );
     
-    // 3. GPU Performance Top 10 Chart
-    const gpuRuns = benchmarkData
-        .filter(r => r.gpuScore !== null)
-        .sort((a, b) => b.gpuScore - a.gpuScore)
-        .slice(0, 10);
+    // 3. GPU Performance Top 10 Chart (best per client)
+    const gpuRuns = dedupeBestPerClient(
+        benchmarkData.filter(r => r.gpuScore !== null),
+        'gpuScore'
+    ).slice(0, 10);
         
     renderHorizontalBarChart(
         'gpuChart',

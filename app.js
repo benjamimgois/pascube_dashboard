@@ -323,7 +323,7 @@ function processGvizData(jsonResponse) {
             clientId: getVal(13) || 'N/D',
             architecture: getVal(14) || 'N/D',
             packageType: getVal(15) || 'N/D',
-            deviceType: getVal(26) || 'N/D',
+            deviceType: getVal(16) || 'N/D',
             productName: getVal(17) || 'N/D'
         };
     }).filter(row => row !== null);
@@ -483,7 +483,7 @@ function processCSVData(csvText) {
             clientId: row[13] || 'N/D',
             architecture: row[14] || 'N/D',
             packageType: row[15] || 'N/D',
-            deviceType: row[26] || 'N/D',
+            deviceType: row[16] || 'N/D',
             productName: row[17] || 'N/D'
         };
     }).filter(row => row !== null && (row.mainScore !== null || row.cpuSingle !== null || row.cpuMulti !== null || row.gpuScore !== null));
